@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="emptyAdType">Ad type is empty</string>
+    <string name="errorsInAdTypeName">Ad type not recognized, did you mean banner or interstitial?</string>
+    <string name="emptyAdUnitID">Ad unit ID is empty</string>
+    <string name="emptyConfigID">Config ID is empty</string>
+    <string name="emptyAdUnitConfigID">Ad unit and config ID are empty</string>
+    <string name="tooSmallRefreshInterval">Refresh interval should be at least 30 seconds</string>
+    <string name="tooBigRefreshInterval">Refresh interval should be no more than 120 seconds</string>
+</resources>

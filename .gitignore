@@ -1,0 +1,6 @@
+.idea
+.dart_tool
+example/.dart_tool
+example/build
+example/android/.gradle
+example/android/.idea

@@ -1,0 +1,29 @@
+name: setupad_prebid_flutter_example
+description: Demonstrates how to use the setupad_prebid_flutter plugin.
+publish_to: 'none'
+
+environment:
+  sdk: '>=2.16.2 <4.0.0'
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  setupad_prebid_flutter:
+    path: ../
+
+  app_tracking_transparency: ^2.0.4
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^1.0.0
+
+flutter:
+  uses-material-design: true
+

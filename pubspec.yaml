@@ -1,0 +1,32 @@
+name: setupad_prebid_flutter
+description: Integrate Prebid Mobile into Flutter apps
+version: 0.0.1
+homepage: https://veon.com/
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+environment:
+  sdk: '>=2.16.2 <4.0.0'
+  flutter: '>=2.2.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^1.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: setupad.plugin.setupad_prebid_flutter
+        pluginClass: SetupadPrebidFlutterPlugin
+      ios:
+        pluginClass: SetupadPrebidFlutterPlugin
