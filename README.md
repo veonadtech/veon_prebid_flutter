@@ -14,7 +14,7 @@ In your `pubspec.yaml` file’s dependencies include Prebid plugin for Flutter a
 dependencies:
  setupad_prebid_flutter:
    git:
-     url: git@github.com:flutter/packageA.git
+     url: git@github.com:veonadtech/veon_prebid_flutter.git
 ```
 
 ## Adding app ID
