@@ -86,7 +86,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
             PrebidMobile.setPrebidServerHost(
                 Host.createCustomHost(
-                    "https://prebid.bangladsp.com/openrtb2/auction"
+                    "https://prebid.veonadx.com/openrtb2/auction"
                 )
             )
 
