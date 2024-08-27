@@ -197,11 +197,9 @@ packages:
   setupad_prebid_flutter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: ec08fdd59a412c864e3accc31282afbdbeb5bc4d
-      url: "git@github.com:veonadtech/veon_prebid_flutter.git"
-    source: git
+      path: ".."
+      relative: true
+    source: path
     version: "0.0.1"
   sky_engine:
     dependency: transitive

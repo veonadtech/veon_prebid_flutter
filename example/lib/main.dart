@@ -6,7 +6,12 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  const PrebidMobile().initializeSDK("com.arena.banglalinkmela.app", 3000, false);
+  const PrebidMobile().initializeSDK(
+      "https://prebid.veonadx.com/openrtb2/auction",
+      "com.arena.banglalinkmela.app",
+      3000,
+      false
+  );
   runApp(const MyApp());
 }
 
