@@ -11,9 +11,9 @@ dependencies:
     sdk: flutter
 
   setupad_prebid_flutter:
-#    path: ../
-    git:
-      url: git@github.com:veonadtech/veon_prebid_flutter.git
+    path: ../
+#    git:
+#      url: git@github.com:veonadtech/veon_prebid_flutter.git
 
   app_tracking_transparency: ^2.0.4
   cupertino_icons: ^1.0.2

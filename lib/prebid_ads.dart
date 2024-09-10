@@ -53,9 +53,8 @@ class PrebidAd extends StatelessWidget {
   ///The unique ID is used for method channel communication
   void onPlatformViewCreated(int id) {
     // PassParameters( adType, configId, adUnitId, height, width, refreshInterval, id);
-    MethodChannel _channel = MethodChannel(
-        'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
-    debugPrint("PrebidPluginLog on platform view created");
+    MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel_$id');
+    debugPrint("PrebidPluginLog view created");
     _channel.invokeMethod('setParams', {
       "adType": adType,
       "configId": configId,
@@ -70,7 +69,7 @@ class PrebidAd extends StatelessWidget {
   ///A method that pauses Prebid auction
   void pauseAuction(){
     int id=0;
-    debugPrint("PrebidPluginLog test metodas");
+    debugPrint("PrebidPluginLog pauseAuction");
     MethodChannel _channel = MethodChannel(
         'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
     _channel.invokeMethod('pauseAuction');
@@ -79,7 +78,7 @@ class PrebidAd extends StatelessWidget {
   ///A method that resumes Prebid auction
   void resumeAuction(){
     int id=0;
-    debugPrint("PrebidPluginLog test metodas");
+    debugPrint("PrebidPluginLog resumeAuction");
     MethodChannel _channel = MethodChannel(
         'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
     _channel.invokeMethod('resumeAuction');
@@ -88,6 +87,7 @@ class PrebidAd extends StatelessWidget {
   ///A method that destroys Prebid auction
   void destroyAuction(){
     int id=0;
+    debugPrint("PrebidPluginLog destroyAuction");
     MethodChannel _channel = MethodChannel(
         'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
     _channel.invokeMethod('destroyAuction');

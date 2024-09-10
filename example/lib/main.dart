@@ -7,10 +7,10 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
-      "https://prebid.veonadx.com/openrtb2/auction"
-      "com.arena.banglalinkmela.app",
-      3000,
-      false
+      "https://prebid.veonadx.com/openrtb2/auction",
+      "uz.beeline.odp",
+      30000,
+      true
   );
   runApp(const MyApp());
 }
@@ -81,28 +81,38 @@ class _MyAppState extends State<MyAppState> {
     }
   }
 
-  bool _showInterstitial = false;
+  List<Widget> adContainer = [];
 
-  PrebidAd prebidBanner = const PrebidAd(
-    adType: 'banner',
-    configId: 'mybl_android_slot4_commerce_home_320x50',
-    adUnitId: '/23081467975,23120258467/mybl_bangladesh/mybl_android_slot4_commerce_home_320x50',
-    width: 320,
-    height: 50,
-    refreshInterval: 30,
-  );
-
-  PrebidAd prebidInterstitial = const PrebidAd(
+  PrebidAd inters = const PrebidAd(
     adType: 'interstitial',
-    configId: 'mybl_android_slot4_commerce_home_320x50',
-    adUnitId: '/23081467975,23120258467/mybl_bangladesh/mybl_android_slot4_commerce_home_320x50',
+    configId: 'beeline_uz_android_universal_interstitial',
+    adUnitId: '/23081467975/mybl_bangladesh/mybl_interstitial',
     width: 80,
     height: 60,
     refreshInterval: 0,
   );
 
+  PrebidAd banner320x250 = const PrebidAd(
+    adType: 'banner',
+    configId: 'beeline_uz_android_universal_300x250',
+    adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_universal_300x250',
+    width: 300,
+    height: 250,
+    refreshInterval: 30,
+  );
+
+  PrebidAd banner320x50 = const PrebidAd(
+    adType: 'banner',
+    configId: 'beeline_uz_android_universal_320x50',
+    adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_universal_320x50',
+    width: 320,
+    height: 50,
+    refreshInterval: 30,
+  );
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -112,27 +122,46 @@ class _MyAppState extends State<MyAppState> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            prebidBanner,
             ElevatedButton(
-              child: const Text('show banner'),
+              child: const Text('clear'),
               onPressed: () {
                 setState(() {
-                  prebidBanner.resumeAuction();
+                  adContainer.clear();
                 });
               },
             ),
             ElevatedButton(
-              child: const Text('show interstitial'),
+              child: const Text('banner 320x50'),
               onPressed: () {
-                _showInterstitial = true;
+                setState(() {
+                  adContainer.add(banner320x50);
+                });
               },
             ),
-            if (_showInterstitial)
-              prebidInterstitial,
+            ElevatedButton(
+              child: const Text('banner 300x250'),
+              onPressed: () {
+                setState(() {
+                  adContainer.add(banner320x250);
+                });
+              },
+            ),
+            ElevatedButton(
+              child: const Text('interstitial'),
+              onPressed: () {
+                setState(() {
+                  adContainer.add(inters);
+                });
+              },
+            ),
+            Column(
+              children: adContainer,
+            ),
           ],
         ),
       ),
     );
+
   }
 }
 

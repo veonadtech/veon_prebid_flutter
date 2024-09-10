@@ -167,7 +167,7 @@ class PrebidView internal constructor(
         refreshInterval: Int
     ) {
 
-        Log.d(Tag, "Prebid banner: $AD_UNIT_ID")
+        Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
         val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
         val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
         bannerLayout?.addView(adView)
