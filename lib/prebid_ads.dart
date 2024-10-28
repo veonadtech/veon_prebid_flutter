@@ -33,16 +33,6 @@ class PrebidAd extends StatelessWidget {
                 onPlatformViewCreated(id);
               }),
         );
-      case TargetPlatform.iOS:
-        return SizedBox(
-          width: adType == "banner" ? width.toDouble() : 1,
-          height: adType == "banner" ? height.toDouble() : 1,
-          child: UiKitView(
-              viewType: 'setupad.plugin.setupad_prebid_flutter',
-              onPlatformViewCreated: (int id) {
-                onPlatformViewCreated(id);
-              }),
-        );
       default:
         return Text(
             '$defaultTargetPlatform is not yet supported by the plugin');
