@@ -28,5 +28,3 @@ flutter:
       android:
         package: setupad.plugin.setupad_prebid_flutter
         pluginClass: SetupadPrebidFlutterPlugin
-      ios:
-        pluginClass: SetupadPrebidFlutterPlugin

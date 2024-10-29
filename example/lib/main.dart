@@ -94,8 +94,8 @@ class _MyAppState extends State<MyAppState> {
 
   PrebidAd banner320x250 = const PrebidAd(
     adType: 'banner',
-    configId: 'beeline_uz_android_universal_300x250',
-    adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_universal_300x250',
+    configId: 'beeline_uz_android_universal_300x250', // This is prebid placement name
+    adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_universal_300x250', // This tag from GAM
     width: 300,
     height: 250,
     refreshInterval: 30,
@@ -134,7 +134,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('banner 320x50'),
               onPressed: () {
                 setState(() {
-                  adContainer.add(banner320x50);
+                  // adContainer.add(banner320x50);
                 });
               },
             ),
@@ -142,7 +142,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('banner 300x250'),
               onPressed: () {
                 setState(() {
-                  adContainer.add(banner320x250);
+                  // adContainer.add(banner320x250);
                 });
               },
             ),
