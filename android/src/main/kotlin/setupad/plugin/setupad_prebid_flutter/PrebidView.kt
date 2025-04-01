@@ -27,6 +27,8 @@ import org.prebid.mobile.addendum.AdViewUtils
 import org.prebid.mobile.addendum.PbFindSizeError
 import org.prebid.mobile.eventhandlers.GamBannerEventHandler
 import org.prebid.mobile.api.rendering.BannerView
+import org.prebid.mobile.api.rendering.listeners.BannerViewListener
+import org.prebid.mobile.api.exceptions.AdException
 
 /**
  * A class that is responsible for creating and adding banner and interstitial ads to the Flutter app's view, as well as pausing and resuming auction
@@ -143,7 +145,37 @@ class PrebidView internal constructor(
                     else -> {
                         Log.d(Tag, "Parameters set successfully!")
                         if (adType.lowercase() == "banner"){
-                            createBanner(adUnitId, configId, width, height, refreshInterval)
+
+                            createBanner(adUnitId, configId, width, height, refreshInterval, object : BannerViewListener {
+                                override fun onAdLoaded(bannerView: BannerView?) {
+                                    Log.d(Tag, "Prebidon AdLoaded")
+
+                                    channel.invokeMethod("onLoaded", configId);
+                                }
+                                override fun onAdDisplayed(bannerView: BannerView?) {
+                                    Log.d(Tag, "Prebidon onAdDisplayed")
+
+                                    channel.invokeMethod("onDisplay", configId);
+                                }
+
+                                override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
+                                    Log.d(Tag, "Prebidon onAdFailed")
+
+                                    channel.invokeMethod("onFail", configId);
+                                }
+
+                                override fun onAdClicked(bannerView: BannerView?) {
+                                    Log.d(Tag, "Prebidon onAdClicked")
+
+                                    channel.invokeMethod("onClick", configId);
+                                }
+
+                                override fun onAdClosed(bannerView: BannerView?) {
+                                    Log.d(Tag, "Prebidon onAdClosed")
+
+                                    channel.invokeMethod("onClose", configId);
+                                }
+                            })
                         }
 
                         else {
@@ -164,12 +196,16 @@ class PrebidView internal constructor(
         CONFIG_ID: String,
         width: Int,
         height: Int,
-        refreshInterval: Int
+        refreshInterval: Int,
+        listener: BannerViewListener,
     ) {
 
         Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
         val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
         val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
+
+        // lister for custom tracking or custom display creative
+        adView.setBannerListener(listener)
         bannerLayout?.addView(adView)
         adView.loadAd()
     }

@@ -90,6 +90,10 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                     prebidHost, //"https://prebid.veonadx.com/openrtb2/auction"
                 )
             )
+            PrebidMobile.setTimeoutMillis(500)
+            PrebidMobile.setCreativeFactoryTimeout(500)
+            PrebidMobile.setShareGeoLocation(true)
+            PrebidMobile.useExternalBrowser = false
 
             PrebidMobile.initializeSdk(activity) { status ->
                 when (status) {
@@ -110,9 +114,9 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                     }
                 }
             }
-            PrebidMobile.setPbsDebug(pbs)
+            //PrebidMobile.setPbsDebug(pbs)
             PrebidMobile.checkGoogleMobileAdsCompatibility(MobileAds.getVersion().toString())
-            PrebidMobile.setTimeoutMillis(timeout)
+            //PrebidMobile.setTimeoutMillis(timeout)
             PrebidMobile.setShareGeoLocation(true)
             PrebidMobile.useExternalBrowser = true
         }

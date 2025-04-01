@@ -7,9 +7,9 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
-      "https://prebid.veonadx.com/openrtb2/auction",
+      "https://prebid-01.veonadx.com/openrtb2/auction",
       "uz.beeline.odp",
-      30000,
+      300000,
       true
   );
   runApp(const MyApp());
@@ -38,6 +38,11 @@ class MyAppState extends StatefulWidget {
 
   @override
   State<MyAppState> createState() => _MyAppState();
+}
+
+// Do what you want
+void eventListener(String event, String slot) {
+  debugPrint(event + " :" + slot);
 }
 
 class _MyAppState extends State<MyAppState> {
@@ -83,14 +88,14 @@ class _MyAppState extends State<MyAppState> {
 
   List<Widget> adContainer = [];
 
-  PrebidAd inters = const PrebidAd(
-    adType: 'interstitial',
-    configId: 'beeline_uz_android_universal_interstitial',
-    adUnitId: '/23081467975/mybl_bangladesh/mybl_interstitial',
-    width: 80,
-    height: 60,
-    refreshInterval: 0,
-  );
+  // PrebidAd inters = const PrebidAd(
+  //   adType: 'interstitial',
+  //   configId: 'beeline_uz_android_universal_interstitial',
+  //   adUnitId: '/23081467975/mybl_bangladesh/mybl_interstitial',
+  //   width: 80,
+  //   height: 60,
+  //   refreshInterval: 0,
+  // );
 
   PrebidAd banner320x250 = const PrebidAd(
     adType: 'banner',
@@ -99,6 +104,7 @@ class _MyAppState extends State<MyAppState> {
     width: 300,
     height: 250,
     refreshInterval: 30,
+    eventListener: eventListener,
   );
 
   PrebidAd banner320x50 = const PrebidAd(
@@ -108,6 +114,7 @@ class _MyAppState extends State<MyAppState> {
     width: 320,
     height: 50,
     refreshInterval: 30,
+    eventListener: eventListener,
   );
 
   @override
@@ -134,7 +141,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('banner 320x50'),
               onPressed: () {
                 setState(() {
-                  // adContainer.add(banner320x50);
+                  adContainer.add(banner320x50);
                 });
               },
             ),
@@ -142,7 +149,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('banner 300x250'),
               onPressed: () {
                 setState(() {
-                  // adContainer.add(banner320x250);
+                  adContainer.add(banner320x250);
                 });
               },
             ),
@@ -150,7 +157,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('interstitial'),
               onPressed: () {
                 setState(() {
-                  adContainer.add(inters);
+                  // adContainer.add(inters);
                 });
               },
             ),

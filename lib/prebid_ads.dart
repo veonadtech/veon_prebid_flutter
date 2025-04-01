@@ -11,6 +11,7 @@ class PrebidAd extends StatelessWidget {
     required this.width,
     required this.height,
     required this.refreshInterval,
+    required this.eventListener,
   }) : super(key: key);
 
   final String adType;
@@ -19,6 +20,7 @@ class PrebidAd extends StatelessWidget {
   final int width;
   final int height;
   final int refreshInterval;
+  final Function eventListener;
 
   @override
   Widget build(BuildContext context) {
@@ -61,9 +63,23 @@ class PrebidAd extends StatelessWidget {
       "adUnitId": adUnitId,
       "height": height,
       "width": width,
-      "refreshInterval": refreshInterval
+      "refreshInterval": refreshInterval,
     });
 
+    _channel.setMethodCallHandler(_methodCallHandler);
+
+  }
+
+  Future<dynamic> _methodCallHandler(MethodCall call) async {
+    switch (call.method) {
+      case "onLoaded":
+      case "onDisplay":
+      case "onFail":
+      case "onClick":
+      case "onClose":
+        final map = call.arguments;
+        eventListener(call.method, map);
+    }
   }
 
   ///A method that pauses Prebid auction
