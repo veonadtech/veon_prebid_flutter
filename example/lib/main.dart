@@ -134,7 +134,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('banner 320x50'),
               onPressed: () {
                 setState(() {
-                  // adContainer.add(banner320x50);
+                  adContainer.add(banner320x50);
                 });
               },
             ),
@@ -142,7 +142,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('banner 300x250'),
               onPressed: () {
                 setState(() {
-                  // adContainer.add(banner320x250);
+                  adContainer.add(banner320x250);
                 });
               },
             ),

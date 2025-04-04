@@ -21,12 +21,18 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
 import org.prebid.mobile.BannerAdUnit
 import org.prebid.mobile.BannerParameters
-import org.prebid.mobile.InterstitialAdUnit
+
 import org.prebid.mobile.Signals
 import org.prebid.mobile.addendum.AdViewUtils
 import org.prebid.mobile.addendum.PbFindSizeError
 import org.prebid.mobile.eventhandlers.GamBannerEventHandler
 import org.prebid.mobile.api.rendering.BannerView
+import org.prebid.mobile.api.rendering.listeners.BannerViewListener
+import org.prebid.mobile.api.exceptions.AdException
+
+import org.prebid.mobile.api.rendering.InterstitialAdUnit
+import org.prebid.mobile.api.rendering.listeners.InterstitialAdUnitListener
+import org.prebid.mobile.eventhandlers.GamInterstitialEventHandler
 
 /**
  * A class that is responsible for creating and adding banner and interstitial ads to the Flutter app's view, as well as pausing and resuming auction
@@ -170,36 +176,53 @@ class PrebidView internal constructor(
         Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
         val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
         val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
-        bannerLayout?.addView(adView)
+        adView.setBannerListener(object : BannerViewListener {
+            override fun onAdLoaded(bannerView: BannerView?) {
+                channel.invokeMethod("onAdLoaded", CONFIG_ID);
+            }
+            override fun onAdDisplayed(bannerView: BannerView?) {
+                channel.invokeMethod("onAdDisplayed", CONFIG_ID);
+            }
+            override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
+                channel.invokeMethod("onAdFailed", CONFIG_ID);
+            }
+            override fun onAdClicked(bannerView: BannerView?) {
+                channel.invokeMethod("onAdClicked", CONFIG_ID);
+            }
+            override fun onAdClosed(bannerView: BannerView?) {
+                channel.invokeMethod("onAdClosed", CONFIG_ID);
+            }
+        })
         adView.loadAd()
+        bannerLayout?.addView(adView)
     }
 
     /**
      * Setting interstitial ad parameters and fetching demand
      */
     private fun createInterstitial(AD_UNIT_ID: String, CONFIG_ID: String, width: Int, height: Int) {
-        if (width!=0 && height!=0){
-            interstitialAdUnit = InterstitialAdUnit(
-                CONFIG_ID,
-                width,
-                height
-            )
-        }
-        else{
-            interstitialAdUnit = InterstitialAdUnit(CONFIG_ID)
-        }
-
-
-        val request = AdManagerAdRequest.Builder().build()
-        interstitialAdUnit?.fetchDemand(request) { result ->
-            Log.d(Tag, "Prebid demand fetch for GAM result: $result")
-            AdManagerInterstitialAd.load(
-                applicationContext,
-                AD_UNIT_ID,
-                request,
-                interstitialListener()
-            )
-        }
+        Log.d(Tag, "Prebid interstitial: $CONFIG_ID/$AD_UNIT_ID")
+        val eventHandler = GamInterstitialEventHandler(appActivity, AD_UNIT_ID)
+        interstitialAdUnit = InterstitialAdUnit(appActivity, CONFIG_ID, eventHandler)
+        interstitialAdUnit?.setInterstitialAdUnitListener(object : InterstitialAdUnitListener {
+            override fun onAdLoaded(interstitialAdUnit: InterstitialAdUnit?) {
+                channel.invokeMethod("onAdLoaded", CONFIG_ID);
+                interstitialAdUnit?.show()
+            }
+            override fun onAdDisplayed(interstitialAdUnit: InterstitialAdUnit?) {
+                channel.invokeMethod("onAdDisplayed", CONFIG_ID);
+            }
+            override fun onAdFailed(interstitialAdUnit: InterstitialAdUnit?, exception: AdException?) {
+                channel.invokeMethod("onAdFailed", CONFIG_ID);
+            }
+            override fun onAdClicked(interstitialAdUnit: InterstitialAdUnit?) {
+                channel.invokeMethod("onAdClicked", CONFIG_ID);
+            }
+            override fun onAdClosed(interstitialAdUnit: InterstitialAdUnit?) {
+                channel.invokeMethod("onAdClosed", CONFIG_ID);
+            }
+        })
+        interstitialAdUnit?.loadAd()
     }
 
     /**
