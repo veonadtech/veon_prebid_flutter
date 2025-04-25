@@ -8,7 +8,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
       "https://prebid.veonadx.com/openrtb2/auction",
-      "uz.beeline.odp",
+      "test",
       30000,
       true
   );
@@ -83,31 +83,40 @@ class _MyAppState extends State<MyAppState> {
 
   List<Widget> adContainer = [];
 
-  PrebidAd inters = const PrebidAd(
-    adType: 'interstitial',
-    configId: 'beeline_uz_android_universal_interstitial',
-    adUnitId: '/23081467975/mybl_bangladesh/mybl_interstitial',
-    width: 80,
-    height: 60,
-    refreshInterval: 0,
+  PrebidAd simpleBanner = const PrebidAd(
+    adType: 'banner',
+    configId: 'prebid-ita-banner-320-50',
+    adUnitId: '/6355419/Travel/Europe/France/Paris',
+    width: 320,
+    height: 50,
+    refreshInterval: 30,
   );
 
-  PrebidAd banner320x250 = const PrebidAd(
+  PrebidAd auctionSimpleBanner = const PrebidAd(
     adType: 'banner',
-    configId: 'beeline_uz_android_universal_300x250', // This is prebid placement name
-    adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_universal_300x250', // This tag from GAM
+    configId: 'prebid-ita-banner-300-50',
+    adUnitId: '/6355419/Travel/Europe/France/Paris',
+    width: 300,
+    height: 50,
+    refreshInterval: 30,
+  );
+
+  PrebidAd auctionSimpleBanner300x250 = const PrebidAd(
+    adType: 'banner',
+    configId: 'prebid-ita-banner-300-250',
+    adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 300,
     height: 250,
     refreshInterval: 30,
   );
 
-  PrebidAd banner320x50 = const PrebidAd(
-    adType: 'banner',
-    configId: 'beeline_uz_android_universal_320x50',
-    adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_universal_320x50',
-    width: 320,
+  PrebidAd interstitial = const PrebidAd(
+    adType: 'interstitial',
+    configId: 'test_interstitial',
+    adUnitId: '/6355419/Travel/Europe/France/Paris',
+    width: 50,
     height: 50,
-    refreshInterval: 30,
+    refreshInterval: 0,
   );
 
   @override
@@ -131,18 +140,26 @@ class _MyAppState extends State<MyAppState> {
               },
             ),
             ElevatedButton(
-              child: const Text('banner 320x50'),
+              child: const Text('simple test banner 320x50'),
               onPressed: () {
                 setState(() {
-                  adContainer.add(banner320x50);
+                  adContainer.add(simpleBanner);
                 });
               },
             ),
             ElevatedButton(
-              child: const Text('banner 300x250'),
+              child: const Text('auction banner 300x50'),
               onPressed: () {
                 setState(() {
-                  adContainer.add(banner320x250);
+                  adContainer.add(auctionSimpleBanner);
+                });
+              },
+            ),
+            ElevatedButton(
+              child: const Text('auction banner 300x250'),
+              onPressed: () {
+                setState(() {
+                  adContainer.add(auctionSimpleBanner300x250);
                 });
               },
             ),
@@ -150,7 +167,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('interstitial'),
               onPressed: () {
                 setState(() {
-                  adContainer.add(inters);
+                  adContainer.add(interstitial);
                 });
               },
             ),
