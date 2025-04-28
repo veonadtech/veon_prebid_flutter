@@ -179,18 +179,23 @@ class PrebidView internal constructor(
         adView.setBannerListener(object : BannerViewListener {
             override fun onAdLoaded(bannerView: BannerView?) {
                 channel.invokeMethod("onAdLoaded", CONFIG_ID);
+                Log.d(Tag, "onAdLoaded:")
             }
             override fun onAdDisplayed(bannerView: BannerView?) {
                 channel.invokeMethod("onAdDisplayed", CONFIG_ID);
+                Log.d(Tag, "onAdDisplayed:")
             }
             override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
                 channel.invokeMethod("onAdFailed", CONFIG_ID);
+                Log.d(Tag, "onAdFailed: $exception")
             }
             override fun onAdClicked(bannerView: BannerView?) {
                 channel.invokeMethod("onAdClicked", CONFIG_ID);
+                Log.d(Tag, "onAdClicked:")
             }
             override fun onAdClosed(bannerView: BannerView?) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID);
+                Log.d(Tag, "onAdClosed:")
             }
         })
         adView.loadAd()
@@ -208,18 +213,23 @@ class PrebidView internal constructor(
             override fun onAdLoaded(interstitialAdUnit: InterstitialAdUnit?) {
                 channel.invokeMethod("onAdLoaded", CONFIG_ID);
                 interstitialAdUnit?.show()
+                Log.d(Tag, "onAdLoaded:")
             }
             override fun onAdDisplayed(interstitialAdUnit: InterstitialAdUnit?) {
                 channel.invokeMethod("onAdDisplayed", CONFIG_ID);
+                Log.d(Tag, "onAdDisplayed:")
             }
             override fun onAdFailed(interstitialAdUnit: InterstitialAdUnit?, exception: AdException?) {
                 channel.invokeMethod("onAdFailed", CONFIG_ID);
+                Log.d(Tag, "onAdFailed: $exception")
             }
             override fun onAdClicked(interstitialAdUnit: InterstitialAdUnit?) {
                 channel.invokeMethod("onAdClicked", CONFIG_ID);
+                Log.d(Tag, "onAdClicked:")
             }
             override fun onAdClosed(interstitialAdUnit: InterstitialAdUnit?) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID);
+                Log.d(Tag, "onAdClosed:")
             }
         })
         interstitialAdUnit?.loadAd()

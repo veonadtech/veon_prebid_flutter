@@ -83,6 +83,15 @@ class _MyAppState extends State<MyAppState> {
 
   List<Widget> adContainer = [];
 
+  PrebidAd simpleTestBanner = const PrebidAd(
+    adType: 'banner',
+    configId: 'test_320x50',
+    adUnitId: '/6355419/Travel/Europe/France/Paris',
+    width: 320,
+    height: 50,
+    refreshInterval: 30,
+  );
+
   PrebidAd simpleBanner = const PrebidAd(
     adType: 'banner',
     configId: 'prebid-ita-banner-320-50',
@@ -113,10 +122,10 @@ class _MyAppState extends State<MyAppState> {
   PrebidAd interstitial = const PrebidAd(
     adType: 'interstitial',
     configId: 'test_interstitial',
-    adUnitId: '/6355419/Travel/Europe/France/Paris',
-    width: 50,
-    height: 50,
-    refreshInterval: 0,
+    adUnitId: '/ca-app-pub-3940256099942544/1033173712',
+    width: 300,
+    height: 250,
+    refreshInterval: 30,
   );
 
   @override
@@ -141,6 +150,14 @@ class _MyAppState extends State<MyAppState> {
             ),
             ElevatedButton(
               child: const Text('simple test banner 320x50'),
+              onPressed: () {
+                setState(() {
+                  adContainer.add(simpleTestBanner);
+                });
+              },
+            ),
+            ElevatedButton(
+              child: const Text('simple banner 320x50'),
               onPressed: () {
                 setState(() {
                   adContainer.add(simpleBanner);
