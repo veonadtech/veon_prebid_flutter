@@ -8,7 +8,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
       "https://prebid.veonadx.com/openrtb2/auction",
-      "uz.beeline.odp",
+      "test",
       30000,
       true
   );
@@ -85,10 +85,10 @@ class _MyAppState extends State<MyAppState> {
 
   PrebidAd inters = const PrebidAd(
     adType: 'interstitial',
-    configId: 'beeline_uz_android_universal_interstitial',
-    adUnitId: '/23081467975/mybl_bangladesh/mybl_interstitial',
-    width: 80,
-    height: 60,
+    configId: 'test_interstitial',
+    adUnitId: '/6355419/Travel/Europe/France/Paris',
+    width: 50,
+    height: 50,
     refreshInterval: 0,
   );
 
@@ -103,8 +103,8 @@ class _MyAppState extends State<MyAppState> {
 
   PrebidAd banner320x50 = const PrebidAd(
     adType: 'banner',
-    configId: 'beeline_uz_android_universal_320x50',
-    adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_universal_320x50',
+    configId: 'test_320x50',
+    adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 320,
     height: 50,
     refreshInterval: 30,
