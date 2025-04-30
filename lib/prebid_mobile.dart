@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 
 ///A class used to initialize Prebid Mobile SDK
@@ -11,12 +13,20 @@ class PrebidMobile {
       int timeoutMillis,
       bool pbsDebug
   ) {
-    const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel_0');
-    return channel.invokeMethod('startPrebid', {
-      "host": prebidHost,
-      "accountID": prebidAccountID,
-      "timeoutMillis": timeoutMillis,
-      "pbsDebug": pbsDebug
-    });
+    if(Platform.isAndroid){
+      const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/android');
+      return channel.invokeMethod('startPrebid', {
+        "host": prebidHost,
+        "accountID": prebidAccountID,
+        "timeoutMillis": timeoutMillis,
+        "pbsDebug": pbsDebug
+      });
+    }else{
+      const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
+      return channel.invokeMethod('initIOS', {
+        "publisherId": prebidAccountID,
+        "serverHost": prebidAccountID,
+      });
+    }
   }
 }
