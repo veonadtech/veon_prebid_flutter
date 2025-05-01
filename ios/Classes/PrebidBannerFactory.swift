@@ -1,14 +1,22 @@
 import Foundation
 
 class PrebidBannerFactory: NSObject, FlutterPlatformViewFactory {
-    private var messenger: FlutterBinaryMessenger!
+    private var messenger: FlutterBinaryMessenger
 
     init(messenger: FlutterBinaryMessenger) {
-        super.init()
         self.messenger = messenger
+        super.init()
     }
 
-    func create(withFrame frame: CGRect, viewIdentifier viewId: Int64, arguments _: Any?) -> FlutterPlatformView {
-        return PrebidBannerView(frame: frame, viewIdentifier: viewId, messenger: messenger)
+    func create(withFrame frame: CGRect, viewIdentifier viewId: Int64, arguments args: Any?) -> FlutterPlatformView {
+        return PrebidBannerView(
+            frame: frame,
+            viewIdentifier: viewId,
+            messenger: messenger
+        )
+    }
+
+    public func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
+        return FlutterStandardMessageCodec.sharedInstance()
     }
 }
