@@ -69,9 +69,9 @@ android {
 
 dependencies{
     implementation 'com.google.android.gms:play-services-ads:22.2.0'
-    implementation "org.prebid:prebid-mobile-sdk:2.1.4"
-    implementation "org.prebid:prebid-mobile-sdk-gam-event-handlers:2.1.4"
-    implementation "org.prebid:prebid-mobile-sdk-admob-adapters:2.1.4"
-    implementation "org.prebid:prebid-mobile-sdk-max-adapters:2.1.4"
+    implementation("com.github.veonadtech:prebid-android-sdk:v0.0.3.6-gradle-8.3.x")
+    implementation("com.github.veonadtech.prebid-android-sdk:core:v0.0.3.6-gradle-8.3.x")
+    implementation("com.github.veonadtech.prebid-android-sdk:mobile:v0.0.3.6-gradle-8.3.x")
+    implementation("com.github.veonadtech.prebid-android-sdk:eventhandlers:v0.0.3.6-gradle-8.3.x")
 
 }
