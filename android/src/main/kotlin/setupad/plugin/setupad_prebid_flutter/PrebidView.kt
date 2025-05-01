@@ -193,6 +193,10 @@ class PrebidView internal constructor(
                 channel.invokeMethod("onAdClicked", CONFIG_ID);
                 Log.d(Tag, "onAdClicked:")
             }
+            override fun onAdUrlClicked(url: String?) {
+                channel.invokeMethod("onAdUrlClicked", CONFIG_ID);
+                Log.d(Tag, url ?: "Url Clicked")
+            }
             override fun onAdClosed(bannerView: BannerView?) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID);
                 Log.d(Tag, "onAdClosed:")
