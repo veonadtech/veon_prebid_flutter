@@ -48,7 +48,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 
-    <!-- Reklama izni uchun qo'shimcha kalitlar -->
+    <!-- additional keys for showing ads -->
     <key>GADApplicationIdentifier</key>
     <string>ca-app-pub-3970277535528613~4793399781</string>
     <key>NSUserTrackingUsageDescription</key>

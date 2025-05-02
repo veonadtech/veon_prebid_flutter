@@ -3,6 +3,7 @@ import AppTrackingTransparency
 import Foundation
 import GoogleMobileAds
 import PrebidMobile
+import os.log
 
 class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
     private var container: UIView!
@@ -32,27 +33,14 @@ class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
         switch call.method {
         case "setParams":
             load(call, result: result)
-        case "initIOS":
-            initIOS(call, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
     }
 
-    private func initIOS(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        let argument = call.arguments as! [String: Any]
-        let serverHost = argument["serverHost"] as? String ?? ""
-        let publisherId = argument["publisherId"] as? String ?? ""
-        print("init iOS SDK")
-        Prebid.shared.prebidServerAccountId = publisherId
-        do {
-            try Prebid.shared.setCustomPrebidServer(url: serverHost)
-        } catch {
-            print("ERROR")
-        }
-    }
-
     private func load(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        NSLog("ios log working well")
+        print("ios log working well")
         let argument = call.arguments as! [String: Any]
         let adUnitId = argument["adUnitId"] as? String ?? ""
         let configId = argument["configId"] as? String ?? ""

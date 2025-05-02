@@ -22,10 +22,12 @@ class PrebidMobile {
         "pbsDebug": pbsDebug
       });
     }else{
-      const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
-      return channel.invokeMethod('initIOS', {
-        "publisherId": prebidAccountID,
-        "serverHost": prebidAccountID,
+      const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios_init');
+      return channel.invokeMethod('startPrebid', {
+        "accountID": prebidAccountID,
+        "host": prebidAccountID,
+        "timeoutMillis": timeoutMillis,
+        "pbsDebug": pbsDebug
       });
     }
   }
