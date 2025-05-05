@@ -1,11 +1,10 @@
 import AdSupport
 import AppTrackingTransparency
 import Foundation
-import GoogleMobileAds
 import PrebidMobile
 import os.log
 
-class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
+class PrebidBannerView: NSObject, FlutterPlatformView, BannerViewDelegate {
     private var container: UIView!
     private let channel: FlutterMethodChannel!
 
@@ -18,7 +17,6 @@ class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
 
         super.init()
 
-        //container.backgroundColor = UIColor.clear
         channel.setMethodCallHandler({
             (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
             self.handle(call, result: result)
@@ -28,6 +26,11 @@ class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
     func view() -> UIView {
         return container
     }
+
+    func bannerViewPresentationController() -> UIViewController? {
+        return UIApplication.shared.delegate?.window??.rootViewController
+    }
+
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
@@ -39,8 +42,6 @@ class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
     }
 
     private func load(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        NSLog("ios log working well")
-        print("ios log working well")
         let argument = call.arguments as! [String: Any]
         let adUnitId = argument["adUnitId"] as? String ?? ""
         let configId = argument["configId"] as? String ?? ""
@@ -48,32 +49,31 @@ class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
         let adWidth = argument["width"] as? Double ?? 0
         let adType = argument["adType"] as? String ?? ""
 
-
+//         result(FlutterError(
+//                               code: "LOAD_PARAMETERS",
+//                               message: "Unknown initialization status",
+//                               details: [
+//                                   "adUnitId": adUnitId,
+//                                   "configId": configId,
+//                                   "adHeight": adHeight,
+//                                   "adWidth": adWidth,
+//                                   "adType": adType
+//                               ]
+//                           ))
         let adSize = CGSize(width: adWidth, height: adHeight)
-        let bannerUnit = BannerAdUnit(configId: configId, size: adSize)
-        let bannerView = GADBannerView(adSize: GADAdSizeFromCGSize(adSize))
-        let request = GADRequest()
-        bannerView.adUnitID = adUnitId
+        let bannerView = BannerView(frame: CGRect(origin: .zero, size: adSize),
+                                          configID: configId,
+                                          adSize: adSize)
         bannerView.delegate = self
-        bannerView.rootViewController = UIApplication.shared.delegate!.window!!.rootViewController!
+        bannerView.adFormat = .banner
+        bannerView.loadAd()
         addBannerViewToView(bannerView)
-        bannerView.backgroundColor = UIColor.clear
 
-        bannerUnit.fetchDemand(adObject: request) { (ResultCode) in
-            self.channel.invokeMethod("demandFetched", arguments: ["name": ResultCode.name()])
-            if #available(iOS 14, *) {
-                ATTrackingManager.requestTrackingAuthorization(completionHandler: { status in
-                    bannerView.load(request)
-                })
-            } else {
-                bannerView.load(request)
-            }
-        }
-        //     bannerView.load(request)
         result(nil)
     }
 
-    private func addBannerViewToView(_ bannerView: GADBannerView) {
+    private func addBannerViewToView(_ bannerView: BannerView) {
+    bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
         container.addConstraints([
             NSLayoutConstraint(
@@ -95,18 +95,4 @@ class PrebidBannerView: NSObject, FlutterPlatformView, GADBannerViewDelegate {
         ])
     }
 
-    func adViewDidReceiveAd(_ bannerView: GADBannerView) {
-        AdViewUtils.findPrebidCreativeSize(
-            bannerView,
-            success: { (size) in
-                guard let bannerView = bannerView as? GADBannerView else {
-                    return
-                }
-
-            },
-            failure: { (error) in
-                print("error: \(error)")
-
-            })
-    }
 }

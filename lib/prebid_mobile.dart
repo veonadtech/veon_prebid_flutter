@@ -24,8 +24,8 @@ class PrebidMobile {
     }else{
       const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios_init');
       return channel.invokeMethod('startPrebid', {
+        "host": prebidHost,
         "accountID": prebidAccountID,
-        "host": prebidAccountID,
         "timeoutMillis": timeoutMillis,
         "pbsDebug": pbsDebug
       });
