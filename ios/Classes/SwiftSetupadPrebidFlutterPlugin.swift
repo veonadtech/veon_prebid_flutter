@@ -52,7 +52,7 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject, FlutterPlugin {
               do {
                   try Prebid.initializeSDK(
                       serverURL: serverHost,
-                      gadMobileAdsVersion: String(describing: MobileAds.shared.versionNumber)
+                      gadMobileAdsVersion: string(for: MobileAds.shared.versionNumber)
                   ) { status, error in
                       switch status {
                       case .succeeded:
@@ -90,6 +90,7 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject, FlutterPlugin {
               }
 
               MobileAds.shared.start()
+              Prebid.shared.logLevel = .debug
 
           } else {
               result(FlutterMethodNotImplemented)

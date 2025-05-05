@@ -4,7 +4,7 @@ import Foundation
 import PrebidMobile
 import os.log
 
-class PrebidBannerView: NSObject, FlutterPlatformView, BannerViewDelegate {
+class PrebidBannerView: NSObject, FlutterPlatformView {
     private var container: UIView!
     private let channel: FlutterMethodChannel!
 
@@ -26,11 +26,6 @@ class PrebidBannerView: NSObject, FlutterPlatformView, BannerViewDelegate {
     func view() -> UIView {
         return container
     }
-
-    func bannerViewPresentationController() -> UIViewController? {
-        return UIApplication.shared.delegate?.window??.rootViewController
-    }
-
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
@@ -93,6 +88,22 @@ class PrebidBannerView: NSObject, FlutterPlatformView, BannerViewDelegate {
                 multiplier: 1,
                 constant: 0),
         ])
+    }
+
+}
+
+extension PrebidBannerView: BannerViewDelegate {
+
+    func bannerViewPresentationController() -> UIViewController? {
+        return UIApplication.shared.delegate?.window??.rootViewController
+    }
+
+    func bannerView(_ bannerView: BannerView, didReceiveAdWithAdSize adSize: CGSize) {
+        NSLog("LOG: Prebid: Ad loaded successfully")
+    }
+
+    func bannerView(_ bannerView: BannerView, didFailToReceiveAdWith error: Error) {
+        NSLog("LOG: Prebid: Ad failed to load - \(error.localizedDescription)")
     }
 
 }
