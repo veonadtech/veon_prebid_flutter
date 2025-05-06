@@ -22,15 +22,14 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject, FlutterPlugin {
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         if call.method == "startPrebid" {
-            //         throw Error("Method not implemented")
             let argument = call.arguments as! [String: Any]
             let serverHost = argument["host"] as? String ?? ""
             let accountId = argument["accountID"] as? String ?? ""
-            print("init iOS SDK")
-            print("host: \(serverHost)")
-            print("accountId: \(accountId)")
-            NSLog("host: \(serverHost)")
-            NSLog("accountId: \(accountId)")
+            NSLog("LOG: init iOS SDK")
+            NSLog("LOG: host: \(serverHost)")
+            NSLog("LOG: accountId: \(accountId)")
+            NSLog("LOG: host: \(serverHost)")
+            NSLog("LOG: accountId: \(accountId)")
             Prebid.shared.prebidServerAccountId = accountId
             do {
                 try Prebid.initializeSDK(
@@ -39,26 +38,26 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject, FlutterPlugin {
                 ) { status, error in
                     switch status {
                     case .succeeded:
-                        print("Prebid SDK successfully initialized")
+                        NSLog("LOG: Prebid SDK successfully initialized")
                     case .failed:
                         if let error = error {
-                            print("An error occurred during Prebid SDK initialization: \(error.localizedDescription)")
+                            NSLog("LOG: An error occurred during Prebid SDK initialization: \(error.localizedDescription)")
                         }
                     case .serverStatusWarning:
                         if let error = error {
-                            print("Prebid Server status checking failed: \(error.localizedDescription)")
+                            NSLog("LOG: Prebid Server status checking failed: \(error.localizedDescription)")
                         }
                     default:
                         break
                     }
                 }
             } catch {
-                print("ERROR")
+                NSLog("LOG: ERROR")
             }
         }
         // other methods
         else {
-            NSLog("init ios channel failed")
+            NSLog("LOG: init ios channel failed")
             result(FlutterMethodNotImplemented)
         }
     }
