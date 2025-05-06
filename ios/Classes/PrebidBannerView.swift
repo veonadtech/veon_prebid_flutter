@@ -101,7 +101,10 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         height: Double,
         adUnitId: String
     ) {
-        prebidInterstitial = InterstitialRenderingAdUnit(configID: configId)
+        prebidInterstitial = InterstitialRenderingAdUnit(
+            configID: configId,
+            minSizePercentage: CGSize(width: 50, height: 50)
+        )
         prebidInterstitial?.delegate = self
 
         NSLog("LOG: Starting load Prebid interstitial...")

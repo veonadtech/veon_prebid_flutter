@@ -7,7 +7,7 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
-      "https://prebid.veonadx.com/openrtb2/auction",
+      "https://prebid-01.veonadx.com/openrtb2/auction",
       "test",
       30000,
       true
