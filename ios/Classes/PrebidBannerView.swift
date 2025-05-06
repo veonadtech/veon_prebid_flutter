@@ -1,13 +1,14 @@
 import AdSupport
 import AppTrackingTransparency
 import Foundation
-import Google_Mobile_Ads_SDK
+import GoogleMobileAds
 import PrebidMobile
 import os.log
 
 class PrebidBannerView: NSObject, FlutterPlatformView {
     private var container: UIView!
     private let channel: FlutterMethodChannel!
+    private var prebidInterstitial: InterstitialRenderingAdUnit?
 
     init(frame: CGRect, viewIdentifier viewId: Int64, messenger: FlutterBinaryMessenger) {
         container = UIView(frame: frame)
@@ -45,6 +46,13 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         let adWidth = argument["width"] as? Double ?? 0
         let adType = argument["adType"] as? String ?? ""
 
+        print("adUnit \(adUnitId)")
+        print("configId \(configId)")
+        print("adHeight \(adHeight)")
+        print("adWidth \(adWidth)")
+        print("adType \(adType)")
+        NSLog("LOG \(adUnitId), \(configId), \(adHeight), \(adHeight), \(adType)")
+        
         switch adType {
         case "banner":
             loadBanner(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
@@ -76,7 +84,8 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         adUnitId: String
     ) {
         let adSize = CGSize(width: width, height: height)
-        let bannerView = BannerView(
+        // Use fully qualified class name to resolve ambiguity
+        let bannerView = PrebidMobile.BannerView(
             frame: CGRect(origin: .zero, size: adSize),
             configID: configId,
             adSize: adSize
@@ -91,35 +100,21 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         configId: String,
         width: Double,
         height: Double,
-        adUnitId:String
+        adUnitId: String
     ) {
-        let gamRequest = AdManagerRequest()
-        let interstitialAdUnit = InterstitialAdUnit(
-            configId: "test_interstitial",
-            minWidthPerc: 50,
-            minHeightPerc: 50
-        )
+        prebidInterstitial = InterstitialRenderingAdUnit(configID: configId)
+        prebidInterstitial?.delegate = self
 
-        interstitialAdUnit.fetchDemand(adObject: gamRequest) { [weak self] bidInfo in
-            Logger().info("Prebid demand fetch result \(bidInfo.name)")
-
-            InterstitialAd.load(with: adUnitId, request: gamRequest) { ad, error in
-                guard let self = self else { return }
-
-                if let error = error {
-                    Logger().info("Failed to load interstitial ad with error: \(error.localizedDescription)")
-                } else if let ad = ad {
-                    ad.fullScreenContentDelegate = self
-                    ad.present(from: self)
-                }
-            }
-        }
-        
-        interstitialAdUnit.adFormats
+        print("Starting load Prebid interstitial...")
+        prebidInterstitial?.loadAd()
 
     }
 
-    private func addBannerViewToView(_ bannerView: BannerView) {
+    private func getRootViewController() -> UIViewController {
+        return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
+    }
+
+    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
         container.addConstraints([
@@ -143,21 +138,47 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
             ),
         ])
     }
-
 }
 
-extension PrebidBannerView: BannerViewDelegate {
+// MARK: - InterstitialAdUnitDelegate
+extension PrebidBannerView: InterstitialAdUnitDelegate {
+    func interstitialDidReceiveAd(_ interstitial: InterstitialRenderingAdUnit) {
+        print("Prebid interstitial успешно загружен, показываем...")
+        // Get a valid UIViewController to present the ad
+        let rootViewController = getRootViewController()
+        interstitial.show(from: rootViewController)
+    }
 
+    func interstitial(_ interstitial: InterstitialRenderingAdUnit, didFailToReceiveAdWithError error: Error?) {
+        print("Ошибка загрузки Prebid interstitial: \(error?.localizedDescription ?? "неизвестная ошибка")")
+    }
+
+    func interstitialWillLeaveApplication(_ interstitial: InterstitialRenderingAdUnit) {
+        print("Пользователь покидает приложение через interstitial")
+    }
+
+    func interstitialDidClickAd(_ interstitial: InterstitialRenderingAdUnit) {
+        print("Пользователь кликнул по interstitial")
+    }
+
+    func interstitialDidCloseAd(_ interstitial: InterstitialRenderingAdUnit) {
+        print("Interstitial закрыт")
+        // Если хотите загрузить новую рекламу после закрытия
+        // addInterstitialAdUnit()
+    }
+}
+
+// Add this extension to implement BannerViewDelegate
+extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
     func bannerViewPresentationController() -> UIViewController? {
         return UIApplication.shared.delegate?.window??.rootViewController
     }
 
-    func bannerView(_ bannerView: BannerView, didReceiveAdWithAdSize adSize: CGSize) {
-        NSLog("LOG: Prebid: Ad loaded successfully")
+    func bannerView(_ bannerView: PrebidMobile.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
+        print("Prebid banner успешно загружен")
     }
 
-    func bannerView(_ bannerView: BannerView, didFailToReceiveAdWith error: Error) {
-        NSLog("LOG: Prebid: Ad failed to load - \(error.localizedDescription)")
+    func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: Error) {
+        print("Ошибка загрузки Prebid banner: \(error.localizedDescription)")
     }
-
 }
