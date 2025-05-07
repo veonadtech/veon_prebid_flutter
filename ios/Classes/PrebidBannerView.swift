@@ -80,7 +80,8 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         configId: String,
         width: Double,
         height: Double,
-        adUnitId: String
+        adUnitId: String,
+        isGamActivated:Boolean
     ) {
         let adSize = CGSize(width: width, height: height)
         // Use fully qualified class name to resolve ambiguity
