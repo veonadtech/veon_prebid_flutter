@@ -81,19 +81,27 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         width: Double,
         height: Double,
         adUnitId: String,
-        isGamActivated:Boolean
     ) {
         let adSize = CGSize(width: width, height: height)
-        // Use fully qualified class name to resolve ambiguity
-        let bannerView = PrebidMobile.BannerView(
-            frame: CGRect(origin: .zero, size: adSize),
-            configID: configId,
-            adSize: adSize
-        )
+        let bannerUnit = BannerAdUnit(configId: configId, size: adSize)
+        let bannerView = BannerView(adSize: adSizeFor(cgSize: adSize))
+        let request = Request()
+        bannerView.adUnitID = adUnitId
         bannerView.delegate = self
-        bannerView.adFormat = .banner
-        bannerView.loadAd()
+        bannerView.rootViewController = UIApplication.shared.delegate!.window!!.rootViewController!
         addBannerViewToView(bannerView)
+        bannerView.backgroundColor = UIColor.clear
+
+        bannerUnit.fetchDemand(adObject: request) { (ResultCode) in
+            self.channel.invokeMethod("demandFetched", arguments: ["name": ResultCode.name()])
+            if #available(iOS 14, *) {
+                ATTrackingManager.requestTrackingAuthorization(completionHandler: { status in
+                    bannerView.load(request)
+                })
+            } else {
+                bannerView.load(request)
+            }
+        }
     }
 
     private func loadInterstitialAd(
@@ -117,7 +125,7 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
     }
 
-    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
+    private func addBannerViewToView(_ bannerView: GoogleMobileAds.BannerView) {
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
         container.addConstraints([
@@ -170,16 +178,16 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
 }
 
 // Add this extension to implement BannerViewDelegate
-extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
+extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
     func bannerViewPresentationController() -> UIViewController? {
         return UIApplication.shared.delegate?.window??.rootViewController
     }
 
-    func bannerView(_ bannerView: PrebidMobile.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
+    func bannerView(_ bannerView: GoogleMobileAds.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
         NSLog("LOG: Prebid banner loaded successfully")
     }
 
-    func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: Error) {
+    func bannerView(_ bannerView: GoogleMobileAds.BannerView, didFailToReceiveAdWith error: Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
     }
 }

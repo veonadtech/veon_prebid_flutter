@@ -175,8 +175,7 @@ class PrebidView internal constructor(
 
         Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
         val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
-        val adSize = org.prebid.mobile.AdSize(width, height)
-        val adView = BannerView(applicationContext, CONFIG_ID, adSize)
+        val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
         adView.setBannerListener(object : BannerViewListener {
             override fun onAdLoaded(bannerView: BannerView?) {
                 channel.invokeMethod("onAdLoaded", CONFIG_ID);
