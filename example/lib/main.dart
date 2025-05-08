@@ -7,7 +7,7 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
-      "https://prebid.veonadx.com/openrtb2/auction",
+      "https://prebid-01.veonadx.com/openrtb2/auction",
       "test",
       30000,
       true
@@ -121,10 +121,10 @@ class _MyAppState extends State<MyAppState> {
 
   PrebidAd interstitial = const PrebidAd(
     adType: 'interstitial',
-    configId: 'test_interstitial',
-    adUnitId: '/ca-app-pub-3940256099942544/1033173712',
-    width: 300,
-    height: 250,
+    configId: 'test_interstitial_ios_1080x1920',
+    adUnitId: '/21775744923/example/interstitial',
+    width: 50,
+    height: 50,
     refreshInterval: 30,
   );
 
