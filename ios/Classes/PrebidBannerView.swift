@@ -3,12 +3,14 @@ import AppTrackingTransparency
 import Foundation
 import GoogleMobileAds
 import PrebidMobile
+import PrebidMobileGAMEventHandlers
 import os.log
 
 class PrebidBannerView: NSObject, FlutterPlatformView {
     private var container: UIView!
     private let channel: FlutterMethodChannel!
     private var prebidInterstitial: InterstitialRenderingAdUnit?
+    private var interstitialAdUnit: InterstitialAdUnit?
 
     init(frame: CGRect, viewIdentifier viewId: Int64, messenger: FlutterBinaryMessenger) {
         container = UIView(frame: frame)
@@ -56,7 +58,9 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         case "banner":
             loadBanner(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
         case "interstitial":
-            loadInterstitialAd(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
+//            loadInterstitialAd(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
+            loadInterstitialRendering(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
+        //            loadInterstitialWithGAM(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
         default:
             result(
                 FlutterError(
@@ -112,12 +116,60 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
     ) {
         prebidInterstitial = InterstitialRenderingAdUnit(
             configID: configId,
-            minSizePercentage: CGSize(width: 50, height: 50)
+            minSizePercentage: CGSize(width: Int(width), height: Int(height))
         )
         prebidInterstitial?.delegate = self
 
         NSLog("LOG: Starting load Prebid interstitial...")
         prebidInterstitial?.loadAd()
+
+    }
+
+    private func loadInterstitialRendering(
+        configId: String,
+        width: Double,
+        height: Double,
+        adUnitId: String
+    ) {
+        let eventHandler = GAMIntersitialEventHandler(adUnitID: adUnitId)
+        prebidInterstitial = InterstitialRenderingAdUnit(
+            configID: configId,
+            minSizePercentage: CGSize(width: Int(width), height: Int(height)),
+            eventHandler: eventHandler
+        )
+        prebidInterstitial?.delegate = self
+
+        NSLog("LOG: Starting load Prebid interstitial...")
+        prebidInterstitial?.loadAd()
+
+    }
+
+    private func loadInterstitialWithGAM(
+        configId: String,
+        width: Double,
+        height: Double,
+        adUnitId: String
+    ) {
+        interstitialAdUnit = InterstitialAdUnit(configId: configId, minWidthPerc: Int(width), minHeightPerc: Int(height))
+        interstitialAdUnit?.adFormats = [.banner]
+        let gamRequest = AdManagerRequest()
+
+        interstitialAdUnit?.fetchDemand(adObject: gamRequest) { [weak self] resultCode in
+            NSLog("Prebid demand fetch for GAM \(resultCode.name())")
+
+            InterstitialAd.load(with: adUnitId, request: gamRequest) { ad, error in
+                guard let self = self else { return }
+
+                if let error = error {
+                    NSLog("Failed to load interstitial ad with error: \(error.localizedDescription)")
+                } else if let ad = ad {
+
+                    ad.fullScreenContentDelegate = self
+                    ad.present(from: self.getRootViewController())
+                }
+            }
+
+        }
 
     }
 
@@ -189,5 +241,11 @@ extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
 
     func bannerView(_ bannerView: GoogleMobileAds.BannerView, didFailToReceiveAdWith error: Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
+    }
+}
+
+extension PrebidBannerView: FullScreenContentDelegate {
+    func ad(_ ad: any FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: any Error) {
+        NSLog("LOG: GAM Interstitial failed \(error.localizedDescription)")
     }
 }
