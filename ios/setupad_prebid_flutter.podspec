@@ -12,6 +12,7 @@ A Flutter plugin that integrates Prebid Mobile SDK for both Android and iOS plat
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
   s.dependency 'Google-Mobile-Ads-SDK', '12.3.0'
+  s.dependency 'PrebidMobileGAMEventHandlers'
   s.dependency 'PrebidMobile', '3.0.0'
   s.static_framework = true
   s.platform = :ios, '10.0'

@@ -58,9 +58,9 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         case "banner":
             loadBanner(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
         case "interstitial":
-//            loadInterstitialAd(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
+      //      loadPrebidInterstitialAd(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
             loadInterstitialRendering(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
-        //            loadInterstitialWithGAM(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
+      //      loadGAMInterstitial(configId: configId, width: adWidth, height: adHeight, adUnitId: adUnitId)
         default:
             result(
                 FlutterError(
@@ -108,7 +108,7 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         }
     }
 
-    private func loadInterstitialAd(
+    private func loadPrebidInterstitialAd(
         configId: String,
         width: Double,
         height: Double,
@@ -131,7 +131,7 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         height: Double,
         adUnitId: String
     ) {
-        let eventHandler = GAMIntersitialEventHandler(adUnitID: adUnitId)
+        let eventHandler = GAMInterstitialEventHandler(adUnitID: adUnitId)
         prebidInterstitial = InterstitialRenderingAdUnit(
             configID: configId,
             minSizePercentage: CGSize(width: Int(width), height: Int(height)),
@@ -144,7 +144,7 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
 
     }
 
-    private func loadInterstitialWithGAM(
+    private func loadGAMInterstitial(
         configId: String,
         width: Double,
         height: Double,
@@ -155,14 +155,14 @@ class PrebidBannerView: NSObject, FlutterPlatformView {
         let gamRequest = AdManagerRequest()
 
         interstitialAdUnit?.fetchDemand(adObject: gamRequest) { [weak self] resultCode in
-            NSLog("Prebid demand fetch for GAM \(resultCode.name())")
+            NSLog("LOG: Prebid demand fetch for GAM \(resultCode.name())")
 
             InterstitialAd.load(with: adUnitId, request: gamRequest) { ad, error in
-                guard let self = self else { return }
+                guard let self else { return }
 
-                if let error = error {
-                    NSLog("Failed to load interstitial ad with error: \(error.localizedDescription)")
-                } else if let ad = ad {
+                if let error {
+                    NSLog("LOG: Failed to load interstitial ad with error: \(error.localizedDescription)")
+                } else if let ad {
 
                     ad.fullScreenContentDelegate = self
                     ad.present(from: self.getRootViewController())
