@@ -9,7 +9,7 @@ void main() {
   const PrebidMobile().initializeSDK(
       "https://prebid.veonadx.com/openrtb2/auction",
       "test",
-      150000,
+      30000,
       true
   );
   runApp(const MyApp());

@@ -20,12 +20,15 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject {
         
         let serverHost = arguments["host"] as? String ?? ""
         let accountId = arguments["accountID"] as? String ?? ""
+        let timeoutMills = arguments["timeoutMillis"] as? Int ?? 30000
         
         NSLog("LOG: init iOS SDK")
         NSLog("LOG: host: \(serverHost)")
         NSLog("LOG: accountId: \(accountId)")
+        NSLog("LOG: timeoutMills: \(timeoutMills)")
         
         Prebid.shared.prebidServerAccountId = accountId
+        Prebid.shared.timeoutMillis = timeoutMills
         
         do {
             try Prebid.initializeSDK(

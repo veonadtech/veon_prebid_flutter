@@ -1,6 +1,7 @@
 import Foundation
 
 class PrebidBannerFactory: NSObject, FlutterPlatformViewFactory {
+
     private var messenger: FlutterBinaryMessenger
 
     init(messenger: FlutterBinaryMessenger) {
@@ -19,4 +20,5 @@ class PrebidBannerFactory: NSObject, FlutterPlatformViewFactory {
     public func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
         return FlutterStandardMessageCodec.sharedInstance()
     }
+
 }

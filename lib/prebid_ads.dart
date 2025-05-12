@@ -65,8 +65,7 @@ class PrebidAd extends StatelessWidget {
     });
 
   }
-  ///A method that passes ad parameters to the PassParameters class
-  ///The unique ID is used for method channel communication
+
   void onIOSViewCreated(int id) {
     const MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
     debugPrint("ios set parameters");
