@@ -10,7 +10,6 @@ import android.widget.FrameLayout
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.admanager.AdManagerAdRequest
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAd
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAdLoadCallback
@@ -20,19 +19,18 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
 import org.prebid.mobile.BannerAdUnit
-import org.prebid.mobile.BannerParameters
-
-import org.prebid.mobile.Signals
 import org.prebid.mobile.addendum.AdViewUtils
 import org.prebid.mobile.addendum.PbFindSizeError
-import org.prebid.mobile.eventhandlers.GamBannerEventHandler
-import org.prebid.mobile.api.rendering.BannerView
-import org.prebid.mobile.api.rendering.listeners.BannerViewListener
 import org.prebid.mobile.api.exceptions.AdException
-
+import org.prebid.mobile.api.rendering.BannerView
 import org.prebid.mobile.api.rendering.InterstitialAdUnit
+import org.prebid.mobile.api.rendering.RewardedAdUnit
+import org.prebid.mobile.api.rendering.listeners.BannerViewListener
 import org.prebid.mobile.api.rendering.listeners.InterstitialAdUnitListener
+import org.prebid.mobile.api.rendering.listeners.RewardedAdUnitListener
+import org.prebid.mobile.eventhandlers.GamBannerEventHandler
 import org.prebid.mobile.eventhandlers.GamInterstitialEventHandler
+import org.prebid.mobile.eventhandlers.GamRewardedEventHandler
 
 /**
  * A class that is responsible for creating and adding banner and interstitial ads to the Flutter app's view, as well as pausing and resuming auction
@@ -120,7 +118,7 @@ class PrebidView internal constructor(
                 Log.e(Tag, applicationContext.getString(R.string.emptyAdType))
             }
 
-            adType.lowercase() != "banner" && adType.lowercase() != "interstitial" -> {
+            adType.lowercase() != "banner" && adType.lowercase() != "interstitial" && adType.lowercase() != "rewardvideo" -> {
                 Log.e(Tag, applicationContext.getString(R.string.errorsInAdTypeName))
             }
 
@@ -138,23 +136,26 @@ class PrebidView internal constructor(
                         Log.e(Tag, applicationContext.getString(R.string.emptyAdUnitConfigID))
                     }
 
-                    refreshInterval < 30 && adType.lowercase()!="interstitial" -> {
-                    Log.e(Tag, applicationContext.getString(R.string.tooSmallRefreshInterval))
+                    refreshInterval < 30 && adType.lowercase() == "banner" -> {
+                        Log.e(Tag, applicationContext.getString(R.string.tooSmallRefreshInterval))
                     }
 
-                    refreshInterval > 120 && adType.lowercase()!="interstitial" -> {
+                    refreshInterval > 120 && adType.lowercase() == "banner" -> {
                         Log.e(Tag, applicationContext.getString(R.string.tooBigRefreshInterval))
                     }
 
                     else -> {
                         Log.d(Tag, "Parameters set successfully!")
-                        if (adType.lowercase() == "banner"){
-                            createBanner(adUnitId, configId, width, height, refreshInterval)
-                        }
+                        when (adType.lowercase()) {
+                            "banner" -> createBanner(adUnitId, configId, width, height, refreshInterval)
+                            "interstitial" -> {
+                                createInterstitial(adUnitId, configId)
+                                bannerLayout?.visibility = View.GONE
+                            }
 
-                        else {
-                            createInterstitial(adUnitId, configId, width, height)
-                            bannerLayout?.visibility = View.GONE
+                            "rewardvideo" -> createRewardVideo(adUnitId, configId)
+
+                            else -> {}
                         }
                     }
                 }
@@ -181,22 +182,27 @@ class PrebidView internal constructor(
                 channel.invokeMethod("onAdLoaded", CONFIG_ID);
                 Log.d(Tag, "onAdLoaded:")
             }
+
             override fun onAdDisplayed(bannerView: BannerView?) {
                 channel.invokeMethod("onAdDisplayed", CONFIG_ID);
                 Log.d(Tag, "onAdDisplayed:")
             }
+
             override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
                 channel.invokeMethod("onAdFailed", CONFIG_ID);
                 Log.d(Tag, "onAdFailed: $exception")
             }
+
             override fun onAdClicked(bannerView: BannerView?) {
                 channel.invokeMethod("onAdClicked", CONFIG_ID);
                 Log.d(Tag, "onAdClicked:")
             }
+
             override fun onAdUrlClicked(url: String?) {
                 channel.invokeMethod("onAdUrlClicked", CONFIG_ID);
                 Log.d(Tag, url ?: "Url Clicked")
             }
+
             override fun onAdClosed(bannerView: BannerView?) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID);
                 Log.d(Tag, "onAdClosed:")
@@ -209,7 +215,7 @@ class PrebidView internal constructor(
     /**
      * Setting interstitial ad parameters and fetching demand
      */
-    private fun createInterstitial(AD_UNIT_ID: String, CONFIG_ID: String, width: Int, height: Int) {
+    private fun createInterstitial(AD_UNIT_ID: String, CONFIG_ID: String) {
         Log.d(Tag, "Prebid interstitial: $CONFIG_ID/$AD_UNIT_ID")
         val eventHandler = GamInterstitialEventHandler(appActivity, AD_UNIT_ID)
         interstitialAdUnit = InterstitialAdUnit(appActivity, CONFIG_ID, eventHandler)
@@ -219,24 +225,69 @@ class PrebidView internal constructor(
                 interstitialAdUnit?.show()
                 Log.d(Tag, "onAdLoaded:")
             }
+
             override fun onAdDisplayed(interstitialAdUnit: InterstitialAdUnit?) {
                 channel.invokeMethod("onAdDisplayed", CONFIG_ID);
                 Log.d(Tag, "onAdDisplayed:")
             }
+
             override fun onAdFailed(interstitialAdUnit: InterstitialAdUnit?, exception: AdException?) {
                 channel.invokeMethod("onAdFailed", CONFIG_ID);
                 Log.d(Tag, "onAdFailed: $exception")
             }
+
             override fun onAdClicked(interstitialAdUnit: InterstitialAdUnit?) {
                 channel.invokeMethod("onAdClicked", CONFIG_ID);
                 Log.d(Tag, "onAdClicked:")
             }
+
             override fun onAdClosed(interstitialAdUnit: InterstitialAdUnit?) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID);
                 Log.d(Tag, "onAdClosed:")
             }
         })
         interstitialAdUnit?.loadAd()
+    }
+
+    private fun createRewardVideo(AD_UNIT_ID: String, CONFIG_ID: String) {
+        Log.d(Tag, "Prebid reward video: $CONFIG_ID/$AD_UNIT_ID")
+        val eventHandler = GamRewardedEventHandler(appActivity, AD_UNIT_ID)
+        RewardedAdUnit(applicationContext, CONFIG_ID, eventHandler).apply {
+            setRewardedAdUnitListener(object : RewardedAdUnitListener {
+                override fun onAdLoaded(unit: RewardedAdUnit?) {
+                    if ((bidResponse.winningBid?.price ?: 0.0) > 0.5) show()
+                    Log.d(Tag, "onAdLoaded:")
+                    channel.invokeMethod("onAdLoaded", CONFIG_ID);
+                }
+
+                override fun onAdDisplayed(p0: RewardedAdUnit?) {
+                    channel.invokeMethod("onAdDisplayed", CONFIG_ID)
+                    Log.d(Tag, "onAdDisplayed:")
+                }
+
+                override fun onAdFailed(p0: RewardedAdUnit?, exception: AdException?) {
+                    channel.invokeMethod("onAdFailed", CONFIG_ID)
+                    Log.d(Tag, "onAdFailed: $exception")
+                }
+
+                override fun onAdClicked(p0: RewardedAdUnit?) {
+                    channel.invokeMethod("onAdClicked", CONFIG_ID)
+                    Log.d(Tag, "onAdClicked:")
+                }
+
+                override fun onAdClosed(p0: RewardedAdUnit?) {
+                    channel.invokeMethod("onAdClosed", CONFIG_ID)
+                    Log.d(Tag, "onAdClosed:")
+                }
+
+                override fun onUserEarnedReward(p0: RewardedAdUnit?) {
+                    channel.invokeMethod("onUserEarnedReward", CONFIG_ID)
+                    Log.d(Tag, "onUserEarnedReward:")
+                }
+
+            })
+            loadAd()
+        }
     }
 
     /**
