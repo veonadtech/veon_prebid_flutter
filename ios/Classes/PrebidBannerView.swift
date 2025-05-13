@@ -12,9 +12,12 @@ class PrebidBannerView: NSObject {
 
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
-
-    /// Prebid interstitial ad unit
-    private var interstitialAdUnit: InterstitialAdUnit?
+    
+    /// Prebid interstitial rendering ad unit
+    private var prebidInterstitial: InterstitialRenderingAdUnit?
+    
+    // Prebid reward ad unit
+    private var rewardedAdUnit: RewardedAdUnit?
 
     // MARK: - Constants
 
@@ -130,21 +133,21 @@ class PrebidBannerView: NSObject {
     private func loadInterstitialRendering(params: AdParameters) {
         let eventHandler = GAMInterstitialEventHandler(adUnitID: params.adUnitId)
         let size = CGSize(width: Int(params.width), height: Int(params.height))
-        let prebidInterstitial = InterstitialRenderingAdUnit(
+        prebidInterstitial = InterstitialRenderingAdUnit(
             configID: params.configId,
             minSizePercentage: size,
             eventHandler: eventHandler
         )
-        prebidInterstitial.delegate = self
-        prebidInterstitial.loadAd()
+        prebidInterstitial?.delegate = self
+        prebidInterstitial?.loadAd()
     }
 
     private func loadRewardVideo(params: AdParameters) {
         let size = CGSize(width: Int(params.width), height: Int(params.height))
         let eventHandler = GAMRewardedAdEventHandler(adUnitID: params.adUnitId)
-        let rewardedAdUnit = RewardedAdUnit(configID: params.configId, minSizePercentage: size, eventHandler: eventHandler)
-        rewardedAdUnit.delegate = self
-        rewardedAdUnit.loadAd()
+        rewardedAdUnit = RewardedAdUnit(configID: params.configId, minSizePercentage: size, eventHandler: eventHandler)
+        rewardedAdUnit?.delegate = self
+        rewardedAdUnit?.loadAd()
     }
 
     // MARK: - Utility Methods
@@ -231,6 +234,7 @@ extension PrebidBannerView: FullScreenContentDelegate {
 }
 
 extension PrebidBannerView: RewardedAdUnitDelegate {
+    
     func rewardedAdDidReceiveAd(_ rewardedAd: RewardedAdUnit) {
         NSLog("LOG: Rewarded ad unit received ad")
         if rewardedAd.isReady {
@@ -244,6 +248,22 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
 
     func rewardedAdUserDidEarnReward(_ rewardedAd: RewardedAdUnit, reward: PrebidReward) {
         NSLog("LOG: User did earn reward: type - \(reward.type ?? ""), count - \(reward.count ?? 0)")
+    }
+    
+    func rewardedAdWillPresentAd(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad will present ad")
+    }
+    
+    func rewardedAdDidDismissAd(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad did dismiss ad")
+    }
+    
+    func rewardedAdDidClickAd(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad did click ad")
+    }
+    
+    func rewardedAdWillLeaveApplication(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad will leave application ad")
     }
 }
 
