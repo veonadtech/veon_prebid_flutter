@@ -13,9 +13,6 @@ class PrebidBannerView: NSObject {
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
 
-    /// Prebid interstitial rendering ad unit
-    private var prebidInterstitial: InterstitialRenderingAdUnit?
-
     /// Prebid interstitial ad unit
     private var interstitialAdUnit: InterstitialAdUnit?
 
@@ -113,80 +110,41 @@ class PrebidBannerView: NSObject {
     // MARK: - Ad Loading Methods
 
     private func loadBanner(params: AdParameters) {
-        let adSize = CGSize(width: params.width, height: params.height)
-        let bannerUnit = BannerAdUnit(configId: params.configId, size: adSize)
-        let bannerView = BannerView(adSize: adSizeFor(cgSize: adSize))
-
-        bannerView.adUnitID = params.adUnitId
-        bannerView.delegate = self
-        bannerView.rootViewController = getRootViewController()
-        bannerView.backgroundColor = UIColor.clear
-        addBannerViewToView(bannerView)
-
-        let request = Request()
-        bannerUnit.fetchDemand(adObject: request) { [weak self] (resultCode) in
-            guard let self = self else { return }
-
-            self.channel.invokeMethod(MethodNames.demandFetched, arguments: ["name": resultCode.name()])
-            if #available(iOS 14, *) {
-                ATTrackingManager.requestTrackingAuthorization { [weak bannerView] _ in
-                    bannerView?.load(request)
-                }
-            } else {
-                bannerView.load(request)
-            }
-        }
+        let adSize = CGSize(width: Int(params.width), height: Int(params.height))
+        let eventHandler = GAMBannerEventHandler(
+            adUnitID: params.adUnitId,
+            validGADAdSizes: [AdSizeBanner].map(nsValue)
+        )
+        
+        let prebidBannerView: PrebidMobile.BannerView = BannerView(
+            frame: CGRect(origin: .zero, size: adSize),
+            configID: params.configId,
+            adSize: adSize,
+            eventHandler: eventHandler
+        )
+        prebidBannerView.delegate = self
+        addBannerViewToView(prebidBannerView)
+        prebidBannerView.loadAd()
     }
 
     private func loadInterstitialRendering(params: AdParameters) {
         let eventHandler = GAMInterstitialEventHandler(adUnitID: params.adUnitId)
         let size = CGSize(width: Int(params.width), height: Int(params.height))
-
-        prebidInterstitial = InterstitialRenderingAdUnit(
+        let prebidInterstitial = InterstitialRenderingAdUnit(
             configID: params.configId,
             minSizePercentage: size,
             eventHandler: eventHandler
         )
-
-        prebidInterstitial?.delegate = self
-
-        prebidInterstitial?.loadAd()
+        prebidInterstitial.delegate = self
+        prebidInterstitial.loadAd()
     }
 
     private func loadRewardVideo(params: AdParameters) {
         let size = CGSize(width: Int(params.width), height: Int(params.height))
         let eventHandler = GAMRewardedAdEventHandler(adUnitID: params.adUnitId)
-        let rewardedAdUnit = RewardedAdUnit(configID: params.configId, minSizePercentage: size, eventHandler: eventHandler)    
+        let rewardedAdUnit = RewardedAdUnit(configID: params.configId, minSizePercentage: size, eventHandler: eventHandler)
         rewardedAdUnit.delegate = self
         rewardedAdUnit.loadAd()
-    }
-
-    private func loadRewardVideoGAM(params: AdParameters) {
-        let gamRequest = AdManagerRequest()
-        let rewardedAdUnit = RewardedVideoAdUnit(configId: params.configId)
-        
-        let parameters = VideoParameters(mimes: ["video/mp4"])
-        parameters.protocols = [Signals.Protocols.VAST_2_0]
-        parameters.playbackMethod = [Signals.PlaybackMethod.AutoPlaySoundOff]
-        rewardedAdUnit.videoParameters = parameters
-        
-        rewardedAdUnit.fetchDemand(adObject: gamRequest) { [weak self] resultCode in
-            NSLog("LOG: Prebid demand fetch for GAM \(resultCode.name())")
-            
-            // 4. Load the GAM rewarded ad
-            RewardedAd.load(with: params.adUnitId, request: gamRequest) { [weak self] ad, error in
-                guard let self = self else { return }
-                if let error = error {
-                    NSLog("LOG: Failed to load rewarded ad with error: \(error.localizedDescription)")
-                } else if let ad = ad {
-                    // 5. Present the interstitial ad
-                    ad.fullScreenContentDelegate = self
-                    ad.present(from: self.getRootViewController(), userDidEarnRewardHandler: {
-                        _ = ad.adReward
-                    })
-                }
-            }
-        }
     }
 
     // MARK: - Utility Methods
@@ -195,7 +153,7 @@ class PrebidBannerView: NSObject {
         return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
     }
 
-    private func addBannerViewToView(_ bannerView: GoogleMobileAds.BannerView) {
+    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
 
@@ -204,7 +162,7 @@ class PrebidBannerView: NSObject {
             bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
         ])
     }
-    
+
 }
 
 // MARK: - FlutterPlatformView
@@ -246,17 +204,17 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
 
 // MARK: - BannerViewDelegate
 
-extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
+extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
 
     func bannerViewPresentationController() -> UIViewController? {
         return getRootViewController()
     }
 
-    func bannerView(_ bannerView: GoogleMobileAds.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
+    func bannerView(_ bannerView: PrebidMobile.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
         NSLog("LOG: Prebid banner loaded successfully")
     }
-
-    func bannerView(_ bannerView: GoogleMobileAds.BannerView, didFailToReceiveAdWithError error: Error) {
+    
+    func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
     }
 
@@ -272,18 +230,18 @@ extension PrebidBannerView: FullScreenContentDelegate {
 
 }
 
-extension PrebidBannerView: RewardedAdUnitDelegate{
+extension PrebidBannerView: RewardedAdUnitDelegate {
     func rewardedAdDidReceiveAd(_ rewardedAd: RewardedAdUnit) {
         NSLog("LOG: Rewarded ad unit received ad")
         if rewardedAd.isReady {
             rewardedAd.show(from: self.getRootViewController())
         }
     }
-    
+
     func rewardedAd(_ rewardedAd: RewardedAdUnit, didFailToReceiveAdWithError error: Error?) {
         NSLog("LOG: Rewarded ad unit failed to receive ad with error: \(error?.localizedDescription ?? "")")
     }
-    
+
     func rewardedAdUserDidEarnReward(_ rewardedAd: RewardedAdUnit, reward: PrebidReward) {
         NSLog("LOG: User did earn reward: type - \(reward.type ?? ""), count - \(reward.count ?? 0)")
     }
