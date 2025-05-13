@@ -133,8 +133,8 @@ class _MyAppState extends State<MyAppState> {
     adType: AdType.rewardVideo,
     configId: 'test_video_content_320x100',
     adUnitId: '/21775744923/example/rewarded',
-    width: null,
-    height: null,
+    width: 50,
+    height: 50,
     refreshInterval: null,
   );
 
