@@ -30,7 +30,7 @@ class PrebidAd extends StatelessWidget {
           child: AndroidView(
               viewType: 'setupad.plugin.setupad_prebid_flutter',
               onPlatformViewCreated: (int id) {
-                onPlatformViewCreated(id);
+                onAndroidViewCreated(id);
               }),
         );
       case TargetPlatform.iOS:
@@ -40,7 +40,7 @@ class PrebidAd extends StatelessWidget {
           child: UiKitView(
               viewType: 'setupad.plugin.setupad_prebid_flutter',
               onPlatformViewCreated: (int id) {
-                onPlatformViewCreated(id);
+                onIOSViewCreated(id);
               }),
         );
       default:
@@ -51,10 +51,24 @@ class PrebidAd extends StatelessWidget {
 
   ///A method that passes ad parameters to the PassParameters class
   ///The unique ID is used for method channel communication
-  void onPlatformViewCreated(int id) {
+  void onAndroidViewCreated(int id) {
     // PassParameters( adType, configId, adUnitId, height, width, refreshInterval, id);
     MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel_$id');
     debugPrint("PrebidPluginLog view created");
+    _channel.invokeMethod('setParams', {
+      "adType": adType,
+      "configId": configId,
+      "adUnitId": adUnitId,
+      "height": height,
+      "width": width,
+      "refreshInterval": refreshInterval
+    });
+
+  }
+
+  void onIOSViewCreated(int id) {
+    const MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
+    debugPrint("ios set parameters");
     _channel.invokeMethod('setParams', {
       "adType": adType,
       "configId": configId,

@@ -122,9 +122,9 @@ class _MyAppState extends State<MyAppState> {
   PrebidAd interstitial = const PrebidAd(
     adType: 'interstitial',
     configId: 'test_interstitial',
-    adUnitId: '/ca-app-pub-3940256099942544/1033173712',
-    width: 300,
-    height: 250,
+    adUnitId: '/21775744923/example/interstitial',
+    width: 50,
+    height: 50,
     refreshInterval: 30,
   );
 

@@ -27,7 +27,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
         try {
             MethodChannel(
                 binding.binaryMessenger,
-                "setupad.plugin.setupad_prebid_flutter/myChannel_0"
+                "setupad.plugin.setupad_prebid_flutter/android"
             ).setMethodCallHandler { call, result ->
                 if (call.method == "startPrebid") {
                     val arguments = call.arguments as? Map<*, *>
