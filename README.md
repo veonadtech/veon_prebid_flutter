@@ -6,7 +6,19 @@
 * `compileSdkVersion` at least `33`
 
 ### iOS
-* in develop
+* `iOS`: 11 or higher
+
+## build.gradle
+In your `build.gradle` file’s add `maven { url 'https://jitpack.io' }` to the `repositories` block 
+inside `allprojects`:
+``` build.gradle
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+        // ... other repositories
+    }
+}
+```
 
 ## pubspec.yaml
 In your `pubspec.yaml` file’s dependencies include Prebid plugin for Flutter and run 'flutter pub get' command in the terminal.
@@ -29,6 +41,21 @@ Locate your `AndroidManifest.xml` file, then include the `<meta-data>` tag insid
    <!--...-->
 </application>
 ```
+### iOS
+Open the iOS part of the Flutter app in Xcode.
+Open `info.plist`:
+
+Add ```GADApplicationIdentifier```:
+Add the key ```GADApplicationIdentifier``` of type String.
+In the String value, paste your Google Publisher ID. 
+For example: ```<string>ca-app-pub-################~##########</string>```.
+Replace ```ca-app-pub-################~##########``` with your actual Google Ad Manager app ID.
+
+Add ```SKAdNetworkItems```:
+Add the key ```SKAdNetworkItems``` of type Array.
+Inside the array, add multiple items of type `Dictionary`.
+Each dictionary item should contain the key `SKAdNetworkIdentifier` of type `String`.
+Copy all the `SKAdNetworkIdentifier` values from the provided example and paste them into your `info.plist`.
 
 ## SDK initialization
 Prebid Mobile initialization is only needed to be done once and it is recommended to initialize it as early as possible in your project.
