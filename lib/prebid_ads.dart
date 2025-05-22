@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:setupad_prebid_flutter/ad_type.dart';
 
 class PrebidAd extends StatelessWidget {
   const PrebidAd({
@@ -13,20 +14,20 @@ class PrebidAd extends StatelessWidget {
     required this.refreshInterval,
   }) : super(key: key);
 
-  final String adType;
+  final AdType adType;
   final String configId;
   final String adUnitId;
-  final int width;
-  final int height;
-  final int refreshInterval;
+  final int? width;
+  final int? height;
+  final int? refreshInterval;
 
   @override
   Widget build(BuildContext context) {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return SizedBox(
-          width: adType == "banner" ? width.toDouble() : 1,
-          height: adType == "banner" ? height.toDouble() : 1,
+          width: adType == AdType.banner ? width?.toDouble() : 1,
+          height: adType == AdType.banner ? height?.toDouble() : 1,
           child: AndroidView(
               viewType: 'setupad.plugin.setupad_prebid_flutter',
               onPlatformViewCreated: (int id) {
@@ -35,8 +36,8 @@ class PrebidAd extends StatelessWidget {
         );
       case TargetPlatform.iOS:
         return SizedBox(
-          width: adType == "banner" ? width.toDouble() : 1,
-          height: adType == "banner" ? height.toDouble() : 1,
+          width: adType == AdType.banner ? width?.toDouble() : 1,
+          height: adType == AdType.banner ? height?.toDouble() : 1,
           child: UiKitView(
               viewType: 'setupad.plugin.setupad_prebid_flutter',
               onPlatformViewCreated: (int id) {
@@ -56,7 +57,7 @@ class PrebidAd extends StatelessWidget {
     MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel_$id');
     debugPrint("PrebidPluginLog view created");
     _channel.invokeMethod('setParams', {
-      "adType": adType,
+      "adType": adType.name,
       "configId": configId,
       "adUnitId": adUnitId,
       "height": height,
@@ -70,7 +71,7 @@ class PrebidAd extends StatelessWidget {
     const MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
     debugPrint("ios set parameters");
     _channel.invokeMethod('setParams', {
-      "adType": adType,
+      "adType": adType.name,
       "configId": configId,
       "adUnitId": adUnitId,
       "height": height,

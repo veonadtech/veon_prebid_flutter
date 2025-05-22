@@ -12,18 +12,19 @@ class PrebidBannerView: NSObject {
 
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
-
+    
     /// Prebid interstitial rendering ad unit
     private var prebidInterstitial: InterstitialRenderingAdUnit?
-
-    /// Prebid interstitial ad unit
-    private var interstitialAdUnit: InterstitialAdUnit?
+    
+    // Prebid reward ad unit
+    private var rewardedAdUnit: RewardedAdUnit?
 
     // MARK: - Constants
 
     private enum AdType {
         static let banner = "banner"
         static let interstitial = "interstitial"
+        static let rewardVideo = "rewardVideo"
     }
 
     private enum MethodNames {
@@ -83,6 +84,8 @@ class PrebidBannerView: NSObject {
             loadBanner(params: adParams)
         case AdType.interstitial:
             loadInterstitialRendering(params: adParams)
+        case AdType.rewardVideo:
+            loadRewardVideo(params: adParams)
         default:
             result(
                 FlutterError(
@@ -110,44 +113,41 @@ class PrebidBannerView: NSObject {
     // MARK: - Ad Loading Methods
 
     private func loadBanner(params: AdParameters) {
-        let adSize = CGSize(width: params.width, height: params.height)
-        let bannerUnit = BannerAdUnit(configId: params.configId, size: adSize)
-        let bannerView = BannerView(adSize: adSizeFor(cgSize: adSize))
-
-        bannerView.adUnitID = params.adUnitId
-        bannerView.delegate = self
-        bannerView.rootViewController = getRootViewController()
-        bannerView.backgroundColor = UIColor.clear
-        addBannerViewToView(bannerView)
-
-        let request = Request()
-        bannerUnit.fetchDemand(adObject: request) { [weak self] (resultCode) in
-            guard let self = self else { return }
-
-            self.channel.invokeMethod(MethodNames.demandFetched, arguments: ["name": resultCode.name()])
-            if #available(iOS 14, *) {
-                ATTrackingManager.requestTrackingAuthorization { [weak bannerView] _ in
-                    bannerView?.load(request)
-                }
-            } else {
-                bannerView.load(request)
-            }
-        }
+        let adSize = CGSize(width: Int(params.width), height: Int(params.height))
+        let eventHandler = GAMBannerEventHandler(
+            adUnitID: params.adUnitId,
+            validGADAdSizes: [AdSizeBanner].map(nsValue)
+        )
+        
+        let prebidBannerView: PrebidMobile.BannerView = BannerView(
+            frame: CGRect(origin: .zero, size: adSize),
+            configID: params.configId,
+            adSize: adSize,
+            eventHandler: eventHandler
+        )
+        prebidBannerView.delegate = self
+        addBannerViewToView(prebidBannerView)
+        prebidBannerView.loadAd()
     }
 
     private func loadInterstitialRendering(params: AdParameters) {
         let eventHandler = GAMInterstitialEventHandler(adUnitID: params.adUnitId)
         let size = CGSize(width: Int(params.width), height: Int(params.height))
-
         prebidInterstitial = InterstitialRenderingAdUnit(
             configID: params.configId,
             minSizePercentage: size,
             eventHandler: eventHandler
         )
-
         prebidInterstitial?.delegate = self
-
         prebidInterstitial?.loadAd()
+    }
+
+    private func loadRewardVideo(params: AdParameters) {
+        let size = CGSize(width: Int(params.width), height: Int(params.height))
+        let eventHandler = GAMRewardedAdEventHandler(adUnitID: params.adUnitId)
+        rewardedAdUnit = RewardedAdUnit(configID: params.configId, minSizePercentage: size, eventHandler: eventHandler)
+        rewardedAdUnit?.delegate = self
+        rewardedAdUnit?.loadAd()
     }
 
     // MARK: - Utility Methods
@@ -156,7 +156,7 @@ class PrebidBannerView: NSObject {
         return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
     }
 
-    private func addBannerViewToView(_ bannerView: GoogleMobileAds.BannerView) {
+    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
 
@@ -165,6 +165,7 @@ class PrebidBannerView: NSObject {
             bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
         ])
     }
+
 }
 
 // MARK: - FlutterPlatformView
@@ -206,17 +207,17 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
 
 // MARK: - BannerViewDelegate
 
-extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
+extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
 
     func bannerViewPresentationController() -> UIViewController? {
         return getRootViewController()
     }
 
-    func bannerView(_ bannerView: GoogleMobileAds.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
+    func bannerView(_ bannerView: PrebidMobile.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
         NSLog("LOG: Prebid banner loaded successfully")
     }
-
-    func bannerView(_ bannerView: GoogleMobileAds.BannerView, didFailToReceiveAdWithError error: Error) {
+    
+    func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
     }
 
@@ -230,6 +231,40 @@ extension PrebidBannerView: FullScreenContentDelegate {
         NSLog("LOG: GAM Interstitial failed \(error.localizedDescription)")
     }
 
+}
+
+extension PrebidBannerView: RewardedAdUnitDelegate {
+    
+    func rewardedAdDidReceiveAd(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad unit received ad")
+        if rewardedAd.isReady {
+            rewardedAd.show(from: self.getRootViewController())
+        }
+    }
+
+    func rewardedAd(_ rewardedAd: RewardedAdUnit, didFailToReceiveAdWithError error: Error?) {
+        NSLog("LOG: Rewarded ad unit failed to receive ad with error: \(error?.localizedDescription ?? "")")
+    }
+
+    func rewardedAdUserDidEarnReward(_ rewardedAd: RewardedAdUnit, reward: PrebidReward) {
+        NSLog("LOG: User did earn reward: type - \(reward.type ?? ""), count - \(reward.count ?? 0)")
+    }
+    
+    func rewardedAdWillPresentAd(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad will present ad")
+    }
+    
+    func rewardedAdDidDismissAd(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad did dismiss ad")
+    }
+    
+    func rewardedAdDidClickAd(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad did click ad")
+    }
+    
+    func rewardedAdWillLeaveApplication(_ rewardedAd: RewardedAdUnit) {
+        NSLog("LOG: Rewarded ad will leave application ad")
+    }
 }
 
 // MARK: - Model

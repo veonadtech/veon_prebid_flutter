@@ -29,6 +29,7 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject {
         
         Prebid.shared.prebidServerAccountId = accountId
         Prebid.shared.timeoutMillis = timeoutMills
+        Prebid.shared.logLevel = .debug
         
         do {
             try Prebid.initializeSDK(

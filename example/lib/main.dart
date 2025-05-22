@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:setupad_prebid_flutter/ad_type.dart';
 import 'package:setupad_prebid_flutter/prebid_mobile.dart';
 import 'package:setupad_prebid_flutter/prebid_ads.dart';
 
@@ -7,7 +8,7 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
-      "https://prebid.veonadx.com/openrtb2/auction",
+      "https://prebid-01.veonadx.com/openrtb2/auction",
       "test",
       30000,
       true
@@ -84,7 +85,7 @@ class _MyAppState extends State<MyAppState> {
   List<Widget> adContainer = [];
 
   PrebidAd simpleTestBanner = const PrebidAd(
-    adType: 'banner',
+    adType: AdType.banner,
     configId: 'test_320x50',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 320,
@@ -93,7 +94,7 @@ class _MyAppState extends State<MyAppState> {
   );
 
   PrebidAd simpleBanner = const PrebidAd(
-    adType: 'banner',
+    adType: AdType.banner,
     configId: 'prebid-ita-banner-320-50',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 320,
@@ -102,7 +103,7 @@ class _MyAppState extends State<MyAppState> {
   );
 
   PrebidAd auctionSimpleBanner = const PrebidAd(
-    adType: 'banner',
+    adType: AdType.banner,
     configId: 'prebid-ita-banner-300-50',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 300,
@@ -111,7 +112,7 @@ class _MyAppState extends State<MyAppState> {
   );
 
   PrebidAd auctionSimpleBanner300x250 = const PrebidAd(
-    adType: 'banner',
+    adType: AdType.banner,
     configId: 'prebid-ita-banner-300-250',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 300,
@@ -120,12 +121,21 @@ class _MyAppState extends State<MyAppState> {
   );
 
   PrebidAd interstitial = const PrebidAd(
-    adType: 'interstitial',
+    adType: AdType.interstitial,
     configId: 'test_interstitial',
     adUnitId: '/21775744923/example/interstitial',
     width: 50,
     height: 50,
-    refreshInterval: 30,
+    refreshInterval: null,
+  );
+
+  PrebidAd rewardVideo = const PrebidAd(
+    adType: AdType.rewardVideo,
+    configId: 'test_video_content_320x100',
+    adUnitId: '/21775744923/example/rewarded',
+    width: 100,
+    height: 100,
+    refreshInterval: null,
   );
 
   @override
@@ -185,6 +195,14 @@ class _MyAppState extends State<MyAppState> {
               onPressed: () {
                 setState(() {
                   adContainer.add(interstitial);
+                });
+              },
+            ),
+            ElevatedButton(
+              child: const Text('reward video'),
+              onPressed: () {
+                setState(() {
+                  adContainer.add(rewardVideo);
                 });
               },
             ),
