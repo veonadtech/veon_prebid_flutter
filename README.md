@@ -4,12 +4,23 @@
 ### Android
 * `minSdkVersion` at least `24`
 * `compileSdkVersion` at least `33`
-
 ### iOS
-* in develop
+* `iOS`: 11 or higher
+
+## build.gradle
+In your `build.gradle` file's add `maven { url 'https://jitpack.io' }` to the `repositories` block 
+inside `allprojects`:
+``` build.gradle
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+        // ... other repositories
+    }
+}
+```
 
 ## pubspec.yaml
-In your `pubspec.yaml` file’s dependencies include Prebid plugin for Flutter and run 'flutter pub get' command in the terminal.
+In your `pubspec.yaml` file's dependencies include Prebid plugin for Flutter and run 'flutter pub get' command in the terminal.
 ```yaml
 dependencies:
  setupad_prebid_flutter:
@@ -29,6 +40,21 @@ Locate your `AndroidManifest.xml` file, then include the `<meta-data>` tag insid
    <!--...-->
 </application>
 ```
+### iOS
+Open the iOS part of the Flutter app in Xcode.
+Open `info.plist`:
+
+Add ```GADApplicationIdentifier```:
+Add the key ```GADApplicationIdentifier``` of type String.
+In the String value, paste your Google Publisher ID. 
+For example: ```<string>ca-app-pub-################~##########</string>```.
+Replace ```ca-app-pub-################~##########``` with your actual Google Ad Manager app ID.
+
+Add ```SKAdNetworkItems```:
+Add the key ```SKAdNetworkItems``` of type Array.
+Inside the array, add multiple items of type `Dictionary`.
+Each dictionary item should contain the key `SKAdNetworkIdentifier` of type `String`.
+Copy all the `SKAdNetworkIdentifier` values from the provided example and paste them into your `info.plist`.
 
 ## SDK initialization
 Prebid Mobile initialization is only needed to be done once and it is recommended to initialize it as early as possible in your project.
@@ -44,10 +70,10 @@ const PrebidMobile().initializeSDK(HOST, ACCOUNT_ID, TIMEOUT, PBSDEBUG)
 * `HOST` is a prebid server host with protocol and path. example: `https://prebid.veonadx.com/openrtb2/auction`
 * `ACCOUNT_ID` is a placeholder for your Prebid account ID.
 *  `TIMEOUT` is a parameter that sets how much time bidders have to submit their bids. It is important to choose a sufficient timeout - if it is too short, there is a chance to get less bids, and if it is too long, it can slow down ad loading and user might wait too long for the ads to appear.
-* `PBSDEBUG` is a boolean type parameter, if it is set to `true`, it adds a debug flag (“test”: 1) into Prebid auction request, which allows to display only test ads and see full Prebid auction response. If none of this is required, you can set it to false.
+* `PBSDEBUG` is a boolean type parameter, if it is set to `true`, it adds a debug flag ("test": 1) into Prebid auction request, which allows to display only test ads and see full Prebid auction response. If none of this is required, you can set it to false.
 
 # Ads integration
-Currently this plugin supports two ad formats: banners and interstitial ads. When creating ad object, it is necessary to specify what ad type it is. Ad type can be written in lowercase (“banner”), uppercase (“BANNER”) or capitalization (“Banner”).
+Currently this plugin supports two ad formats: banners and interstitial ads. When creating ad object, it is necessary to specify what ad type it is. Ad type can be written in lowercase ("banner"), uppercase ("BANNER") or capitalization ("Banner").
 
 The first step in displaying ads is to import ads library:
 ```dart
@@ -82,6 +108,9 @@ PrebidAd prebidBanner = const PrebidAd(
   }
 ```
 `AD_UNIT_ID` and `CONFIG_ID` are placeholders for the ad unit ID and config ID parameters. The minimum refresh interval is 30 seconds, and the maximum is 120 seconds.
+
+----
+[Prebid Mobile SDK]: https://docs.prebid.org/prebid-mobile/prebid-mobile.html
 
 ----
 [Prebid Mobile SDK]: https://docs.prebid.org/prebid-mobile/prebid-mobile.html
