@@ -34,8 +34,10 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                     val prebidHost = arguments?.get("host") as? String ?: ""
                     val prebidAccountID = arguments?.get("accountID") as? String ?: ""
                     val timeoutMillis = arguments?.get("timeoutMillis") as? Int ?: 0
+                    val creativeLoadingTimeout = arguments?.get("creativeLoadingTimeout") as? Int ?: 0
+                    val preRenderContentTimeout = arguments?.get("preRenderContentTimeout") as? Int ?: 0
                     val pbsDebug = arguments?.get("pbsDebug") as? Boolean ?: false
-                    initializePrebidMobile(prebidHost, prebidAccountID, timeoutMillis, pbsDebug)
+                    initializePrebidMobile(prebidHost, prebidAccountID, timeoutMillis, creativeLoadingTimeout, preRenderContentTimeout, pbsDebug)
                 } else {
                     result.notImplemented()
                 }
@@ -82,7 +84,12 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     /**
      * Prebid Mobile SDK initialization method
      */
-    private fun initializePrebidMobile(prebidHost: String, prebidAccountID: String, timeout: Int, pbs: Boolean) {
+    private fun initializePrebidMobile(prebidHost: String,
+                                       prebidAccountID: String,
+                                       timeout: Int,
+                                       creativeLoadingTimeout: Int,
+                                       preRenderContentTimeout: Int,
+                                       pbs: Boolean) {
         activityFuture.thenAccept { activity ->
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
             PrebidMobile.setPrebidServerHost(
@@ -113,6 +120,8 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
             PrebidMobile.setPbsDebug(pbs)
             PrebidMobile.checkGoogleMobileAdsCompatibility(MobileAds.getVersion().toString())
             PrebidMobile.setTimeoutMillis(timeout)
+            PrebidMobile.setCreativeFactoryTimeout(creativeLoadingTimeout)
+            PrebidMobile.setCreativeFactoryTimeoutPreRenderContent(preRenderContentTimeout)
             PrebidMobile.setShareGeoLocation(true)
             PrebidMobile.useExternalBrowser = true
         }

@@ -11,6 +11,8 @@ class PrebidMobile {
       String prebidHost,
       String prebidAccountID,
       int timeoutMillis,
+      int creativeLoadingTimeout,
+      int preRenderContentTimeout,
       bool pbsDebug
   ) {
     if(Platform.isAndroid){
@@ -19,6 +21,8 @@ class PrebidMobile {
         "host": prebidHost,
         "accountID": prebidAccountID,
         "timeoutMillis": timeoutMillis,
+        "creativeLoadingTimeout": creativeLoadingTimeout,
+        "preRenderContentTimeout": preRenderContentTimeout,
         "pbsDebug": pbsDebug
       });
     }else{
