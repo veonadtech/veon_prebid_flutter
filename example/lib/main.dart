@@ -170,7 +170,12 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('simple banner 320x50'),
               onPressed: () {
                 setState(() {
-                  adContainer.add(simpleBanner);
+                  adContainer.add(
+                    FittedBox(
+                      fit: BoxFit.contain,
+                      child: simpleBanner,
+                    ),
+                  );
                 });
               },
             ),
