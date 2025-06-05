@@ -10,6 +10,7 @@ import android.widget.FrameLayout
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.admanager.AdManagerAdRequest
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAd
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAdLoadCallback
@@ -217,36 +218,40 @@ class PrebidView internal constructor(
      */
     private fun createInterstitial(AD_UNIT_ID: String, CONFIG_ID: String) {
         Log.d(Tag, "Prebid interstitial: $CONFIG_ID/$AD_UNIT_ID")
-        val eventHandler = GamInterstitialEventHandler(appActivity, AD_UNIT_ID)
-        interstitialAdUnit = InterstitialAdUnit(appActivity, CONFIG_ID, eventHandler)
-        interstitialAdUnit?.setInterstitialAdUnitListener(object : InterstitialAdUnitListener {
-            override fun onAdLoaded(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdLoaded", CONFIG_ID);
-                interstitialAdUnit?.show()
-                Log.d(Tag, "onAdLoaded:")
+        val adUnit = org.prebid.mobile.InterstitialAdUnit(CONFIG_ID)
+
+        // Make a bid request to Prebid Server
+        val builder = AdManagerAdRequest.Builder()
+        adUnit.fetchDemand(builder) {
+            val request = builder.build()
+
+            // Load a GAM interstitial ad
+            AdManagerInterstitialAd.load(
+                applicationContext,
+                AD_UNIT_ID,
+                request,
+                createGamInterstitialListener(CONFIG_ID)
+            )
+        }
+    }
+
+    private fun createGamInterstitialListener(CONFIG_ID: String): AdManagerInterstitialAdLoadCallback {
+        return object : AdManagerInterstitialAdLoadCallback() {
+
+            override fun onAdLoaded(adManagerInterstitialAd: AdManagerInterstitialAd) {
+                super.onAdLoaded(adManagerInterstitialAd)
+                channel.invokeMethod("onAdDisplayed", CONFIG_ID)
+
+                // Present the interstitial ad
+                adManagerInterstitialAd.show(appActivity)
             }
 
-            override fun onAdDisplayed(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdDisplayed", CONFIG_ID);
-                Log.d(Tag, "onAdDisplayed:")
+            override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                super.onAdFailedToLoad(loadAdError)
+                channel.invokeMethod("onAdFailed", CONFIG_ID)
+                Log.e("Tag", "Ad failed to load: $loadAdError")
             }
-
-            override fun onAdFailed(interstitialAdUnit: InterstitialAdUnit?, exception: AdException?) {
-                channel.invokeMethod("onAdFailed", CONFIG_ID);
-                Log.d(Tag, "onAdFailed: $exception")
-            }
-
-            override fun onAdClicked(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdClicked", CONFIG_ID);
-                Log.d(Tag, "onAdClicked:")
-            }
-
-            override fun onAdClosed(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdClosed", CONFIG_ID);
-                Log.d(Tag, "onAdClosed:")
-            }
-        })
-        interstitialAdUnit?.loadAd()
+        }
     }
 
     private fun createRewardVideo(AD_UNIT_ID: String, CONFIG_ID: String) {
