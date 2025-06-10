@@ -148,7 +148,7 @@ class PrebidView internal constructor(
                     else -> {
                         Log.d(Tag, "Parameters set successfully!")
                         when (adType.lowercase()) {
-                            "banner" -> createGAMBanner(adUnitId, configId, width, height, refreshInterval)
+                            "banner" -> createBanner(adUnitId, configId, width, height, refreshInterval)
                             "interstitial" -> {
                                 createInterstitial(adUnitId, configId)
                                 bannerLayout?.visibility = View.GONE
@@ -211,41 +211,6 @@ class PrebidView internal constructor(
         })
         adView.loadAd()
         bannerLayout?.addView(adView)
-    }
-
-    private fun createGAMBanner(
-        AD_UNIT_ID: String,
-        CONFIG_ID: String,
-        width: Int,
-        height: Int,
-        refreshInterval: Int
-    ) {
-
-        Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
-        val adUnit = BannerAdUnit(CONFIG_ID, width, height)
-        adUnit?.setAutoRefreshInterval(refreshInterval)
-
-        // 2. Configure banner parameters
-        val parameters = BannerParameters()
-        parameters.api = listOf(Signals.Api.MRAID_3, Signals.Api.OMID_1)
-        adUnit?.bannerParameters = parameters
-
-        // 3. Create AdManagerAdView
-        val adView = AdManagerAdView(applicationContext)
-        adView.adUnitId = AD_UNIT_ID
-        adView.setAdSizes(AdSize(width, height))
-        adView.adListener = bannerListener(adView)
-
-        // Add GMA SDK banner view to the app UI
-        bannerLayout?.addView(adView)
-
-        // 4. Make a bid request to Prebid Server
-        val request = AdManagerAdRequest.Builder().build()
-        adUnit?.fetchDemand(request) {
-
-            // 5. Load GAM Ad
-            adView.loadAd(request)
-        }
     }
 
     /**
