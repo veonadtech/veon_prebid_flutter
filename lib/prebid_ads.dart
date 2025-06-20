@@ -73,7 +73,6 @@ class PrebidAd extends StatelessWidget {
   }
 
   Future<dynamic> _methodCallHandler(MethodCall call) async {
-    print("AAAA: "+call.arguments);
     final configId = call.arguments.toString();
     switch (call.method) {
       case "onAdLoaded":
@@ -109,6 +108,7 @@ class PrebidAd extends StatelessWidget {
       "refreshInterval": refreshInterval
     });
 
+    _channel.setMethodCallHandler(_methodCallHandler);
   }
 
   ///A method that pauses Prebid auction

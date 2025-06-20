@@ -12,12 +12,14 @@ class PrebidBannerView: NSObject {
 
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
-    
+
     /// Prebid interstitial rendering ad unit
     private var prebidInterstitial: InterstitialRenderingAdUnit?
-    
+
     // Prebid reward ad unit
     private var rewardedAdUnit: RewardedAdUnit?
+
+    private var configId: String = ""
 
     // MARK: - Constants
 
@@ -78,6 +80,7 @@ class PrebidBannerView: NSObject {
 
         let adParams = AdParameters(from: arguments)
         logAdParameters(adParams)
+        configId = adParams.configId
 
         switch adParams.adType {
         case AdType.banner:
@@ -118,7 +121,7 @@ class PrebidBannerView: NSObject {
             adUnitID: params.adUnitId,
             validGADAdSizes: [AdSizeBanner].map(nsValue)
         )
-        
+
         let prebidBannerView: PrebidMobile.BannerView = BannerView(
             frame: CGRect(origin: .zero, size: adSize),
             configID: params.configId,
@@ -182,25 +185,33 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
 
     func interstitialDidReceiveAd(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: Prebid interstitial has been loaded, we're showing it...")
+        channel.invokeMethod("onAdLoaded", arguments: configId)
+
         let rootViewController = getRootViewController()
         let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
         interstitial.show(from: controllerToPresent)
+
+        channel.invokeMethod("onAdDisplayed", arguments: configId)
     }
 
     func interstitial(_ interstitial: InterstitialRenderingAdUnit, didFailToReceiveAdWithError error: Error?) {
         NSLog("LOG: Error loading Prebid interstitial: \(error?.localizedDescription ?? "unknown error")")
+        channel.invokeMethod("onAdFailed", arguments: configId)
     }
 
     func interstitialWillLeaveApplication(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: User leaves the app via interstitial ad")
+        channel.invokeMethod("onAdClicked", arguments: configId)
     }
 
     func interstitialDidClickAd(_ interstitial: InterstitialRenderingAdUnit) {
-        NSLog("LOG: User left via interstitial ad")
+        NSLog("LOG: User clicked interstitial ad")
+        channel.invokeMethod("onAdClicked", arguments: configId)
     }
 
     func interstitialDidCloseAd(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: Interstitial is closed")
+        channel.invokeMethod("onAdClosed", arguments: configId)
     }
 
 }
@@ -215,10 +226,26 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
 
     func bannerView(_ bannerView: PrebidMobile.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
         NSLog("LOG: Prebid banner loaded successfully")
+        let configId = bannerView.configID
+        channel.invokeMethod("onAdLoaded", arguments: configId)
     }
-    
+
     func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
+        let configId = bannerView.configID
+        channel.invokeMethod("onAdFailed", arguments: configId)
+    }
+
+    func bannerViewDidRecordImpression(_ bannerView: PrebidMobile.BannerView) {
+        NSLog("LOG: Banner did record impression")
+        let configId = bannerView.configID
+        channel.invokeMethod("onAdDisplayed", arguments: configId)
+    }
+
+    func bannerViewWillLeaveApplication(_ bannerView: PrebidMobile.BannerView) {
+        NSLog("LOG: Banner will leave application")
+        let configId = bannerView.configID
+        channel.invokeMethod("onAdClicked", arguments: configId)
     }
 
 }
@@ -234,9 +261,11 @@ extension PrebidBannerView: FullScreenContentDelegate {
 }
 
 extension PrebidBannerView: RewardedAdUnitDelegate {
-    
+
     func rewardedAdDidReceiveAd(_ rewardedAd: RewardedAdUnit) {
         NSLog("LOG: Rewarded ad unit received ad")
+        channel.invokeMethod("onAdLoaded", arguments: configId)
+
         if rewardedAd.isReady {
             rewardedAd.show(from: self.getRootViewController())
         }
@@ -244,26 +273,31 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
 
     func rewardedAd(_ rewardedAd: RewardedAdUnit, didFailToReceiveAdWithError error: Error?) {
         NSLog("LOG: Rewarded ad unit failed to receive ad with error: \(error?.localizedDescription ?? "")")
+        channel.invokeMethod("onAdFailed", arguments: configId)
     }
 
     func rewardedAdUserDidEarnReward(_ rewardedAd: RewardedAdUnit, reward: PrebidReward) {
         NSLog("LOG: User did earn reward: type - \(reward.type ?? ""), count - \(reward.count ?? 0)")
     }
-    
+
     func rewardedAdWillPresentAd(_ rewardedAd: RewardedAdUnit) {
         NSLog("LOG: Rewarded ad will present ad")
+        channel.invokeMethod("onAdDisplayed", arguments: configId)
     }
-    
+
     func rewardedAdDidDismissAd(_ rewardedAd: RewardedAdUnit) {
         NSLog("LOG: Rewarded ad did dismiss ad")
+        channel.invokeMethod("onAdClosed", arguments: configId)
     }
-    
+
     func rewardedAdDidClickAd(_ rewardedAd: RewardedAdUnit) {
         NSLog("LOG: Rewarded ad did click ad")
+        channel.invokeMethod("onAdClicked", arguments: configId)
     }
-    
+
     func rewardedAdWillLeaveApplication(_ rewardedAd: RewardedAdUnit) {
         NSLog("LOG: Rewarded ad will leave application ad")
+        channel.invokeMethod("onAdUrlClicked", arguments: configId)
     }
 }
 
