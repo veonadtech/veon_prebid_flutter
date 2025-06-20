@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:setupad_prebid_flutter/ad_type.dart';
+import 'package:setupad_prebid_flutter/event_listener.dart';
 
 class PrebidAd extends StatelessWidget {
   const PrebidAd({
@@ -12,6 +13,7 @@ class PrebidAd extends StatelessWidget {
     required this.width,
     required this.height,
     required this.refreshInterval,
+    required this.eventListener,
   }) : super(key: key);
 
   final AdType adType;
@@ -20,6 +22,7 @@ class PrebidAd extends StatelessWidget {
   final int? width;
   final int? height;
   final int? refreshInterval;
+  final EventListener eventListener;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +68,33 @@ class PrebidAd extends StatelessWidget {
       "refreshInterval": refreshInterval
     });
 
+    _channel.setMethodCallHandler(_methodCallHandler);
+
+  }
+
+  Future<dynamic> _methodCallHandler(MethodCall call) async {
+    print("AAAA: "+call.arguments);
+    final configId = call.arguments.toString();
+    switch (call.method) {
+      case "onAdLoaded":
+        eventListener.onAdLoaded(configId);
+        break;
+      case "onAdDisplayed":
+        eventListener.onAdDisplayed(configId);
+        break;
+      case "onAdFailed":
+        eventListener.onAdFailed(configId);
+        break;
+      case "onAdClicked":
+        eventListener.onAdClicked(configId);
+        break;
+      case "onAdUrlClicked":
+        eventListener.onAdUrlClicked(configId);
+        break;
+      case "onAdClosed":
+        eventListener.onAdClosed(configId);
+        break;
+    }
   }
 
   void onIOSViewCreated(int id) {
