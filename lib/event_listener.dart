@@ -3,7 +3,7 @@ abstract class EventListener {
 
   onAdDisplayed(String configId);
 
-  onAdFailed(String configId);
+  onAdFailed(String errorMessage);
 
   onAdClicked(String configId);
 

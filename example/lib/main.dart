@@ -238,8 +238,8 @@ class _PrebidEventListener implements EventListener {
   }
 
   @override
-  onAdFailed(String configId) {
-    print('AAAA Ad failed: $configId');
+  onAdFailed(String errorMessage) {
+    print('AAAA Ad failed: $errorMessage');
     // Your logic
   }
 

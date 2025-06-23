@@ -146,9 +146,8 @@ class PrebidBannerView: NSObject {
     }
 
     private func loadRewardVideo(params: AdParameters) {
-        let size = CGSize(width: Int(params.width), height: Int(params.height))
         let eventHandler = GAMRewardedAdEventHandler(adUnitID: params.adUnitId)
-        rewardedAdUnit = RewardedAdUnit(configID: params.configId, minSizePercentage: size, eventHandler: eventHandler)
+        rewardedAdUnit = RewardedAdUnit(configID: params.configId, eventHandler: eventHandler)
         rewardedAdUnit?.delegate = self
         rewardedAdUnit?.loadAd()
     }
@@ -196,12 +195,12 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
 
     func interstitial(_ interstitial: InterstitialRenderingAdUnit, didFailToReceiveAdWithError error: Error?) {
         NSLog("LOG: Error loading Prebid interstitial: \(error?.localizedDescription ?? "unknown error")")
-        channel.invokeMethod("onAdFailed", arguments: configId)
+        channel.invokeMethod("onAdFailed", arguments: error?.localizedDescription ?? "unknown error")
     }
 
     func interstitialWillLeaveApplication(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: User leaves the app via interstitial ad")
-        channel.invokeMethod("onAdClicked", arguments: configId)
+        channel.invokeMethod("onAdUrlClicked", arguments: configId)
     }
 
     func interstitialDidClickAd(_ interstitial: InterstitialRenderingAdUnit) {
@@ -233,19 +232,26 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
     func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
         let configId = bannerView.configID
-        channel.invokeMethod("onAdFailed", arguments: configId)
+        channel.invokeMethod("onAdFailed", arguments: error.localizedDescription)
     }
 
     func bannerViewDidRecordImpression(_ bannerView: PrebidMobile.BannerView) {
         NSLog("LOG: Banner did record impression")
-        let configId = bannerView.configID
-        channel.invokeMethod("onAdDisplayed", arguments: configId)
     }
 
     func bannerViewWillLeaveApplication(_ bannerView: PrebidMobile.BannerView) {
         NSLog("LOG: Banner will leave application")
         let configId = bannerView.configID
         channel.invokeMethod("onAdClicked", arguments: configId)
+    }
+    
+    func bannerViewWillPresentModal(_ bannerView: PrebidMobile.BannerView) {
+        let configId = bannerView.configID
+        channel.invokeMethod("onAdDisplayed", arguments: configId)
+    }
+    
+    func bannerViewDidDismissModal(_ bannerView: PrebidMobile.BannerView) {
+        
     }
 
 }
@@ -256,6 +262,27 @@ extension PrebidBannerView: FullScreenContentDelegate {
 
     func ad(_ ad: any FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: any Error) {
         NSLog("LOG: GAM Interstitial failed \(error.localizedDescription)")
+        channel.invokeMethod("onAdFailed", arguments: error.localizedDescription)
+    }
+    
+    func adDidRecordImpression(_ ad: any FullScreenPresentingAd) {
+        channel.invokeMethod("onAdDisplayed", arguments: configId)
+    }
+    
+    func adDidRecordClick(_ ad: any FullScreenPresentingAd) {
+        channel.invokeMethod("onAdClicked", arguments: configId)
+    }
+    
+    func adWillDismissFullScreenContent(_ ad: any FullScreenPresentingAd) {
+        
+    }
+    
+    func adWillPresentFullScreenContent(_ ad: any FullScreenPresentingAd) {
+        channel.invokeMethod("onAdDisplayed", arguments: configId)
+    }
+    
+    func adDidDismissFullScreenContent(_ ad: any FullScreenPresentingAd) {
+        
     }
 
 }
@@ -273,7 +300,7 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
 
     func rewardedAd(_ rewardedAd: RewardedAdUnit, didFailToReceiveAdWithError error: Error?) {
         NSLog("LOG: Rewarded ad unit failed to receive ad with error: \(error?.localizedDescription ?? "")")
-        channel.invokeMethod("onAdFailed", arguments: configId)
+        channel.invokeMethod("onAdFailed", arguments: error?.localizedDescription ?? "unknown error")
     }
 
     func rewardedAdUserDidEarnReward(_ rewardedAd: RewardedAdUnit, reward: PrebidReward) {
