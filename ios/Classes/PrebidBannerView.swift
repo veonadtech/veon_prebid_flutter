@@ -123,7 +123,6 @@ class PrebidBannerView: NSObject {
         guard let adSize, let configId else { return }
 
         let adUnit = BannerAdUnit(configId: configId, size: adSize)
-        adUnit.setAutoRefreshMillis(time: 30000)
 
         // Configure banner parameters
         let parameters = BannerParameters()
