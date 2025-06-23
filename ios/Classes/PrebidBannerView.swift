@@ -134,11 +134,6 @@ class PrebidBannerView: NSObject {
         gamBanner?.adUnitID = params.adUnitId
         gamBanner?.delegate = self
 
-        // Add GMA SDK banner view to the app UI
-        if let gamBanner {
-            addBannerViewToView(gamBanner)
-        }
-
         // Make a bid request to Prebid Server
         let gamRequest = AdManagerRequest()
         adUnit.fetchDemand(adObject: gamRequest) { [weak self] resultCode in
@@ -194,14 +189,31 @@ class PrebidBannerView: NSObject {
         return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
     }
 
-    private func addBannerViewToView<T: UIView>(_ bannerView: T) {
+    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
-
         NSLayoutConstraint.activate([
             bannerView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
             bannerView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
-
+            bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+    }
+    
+    private func addGamBannerViewToView(_ bannerView: AdManagerBannerView) {
+        let paddingView = UIView()
+        paddingView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(paddingView)
+        
+        NSLayoutConstraint.activate([
+            paddingView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
+            paddingView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5)
+        ])
+        
+        paddingView.addSubview(bannerView)
+        
+        NSLayoutConstraint.activate([
+            bannerView.centerXAnchor.constraint(equalTo: paddingView.centerXAnchor),
+            bannerView.centerYAnchor.constraint(equalTo: paddingView.centerYAnchor)
         ])
     }
 
@@ -268,7 +280,7 @@ extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
 
     func bannerViewDidReceiveAd(_ bannerView: GoogleMobileAds.BannerView) {
          if let gamBanner {
-             addBannerViewToView(gamBanner)
+             addGamBannerViewToView(gamBanner)
          }
         AdViewUtils.findPrebidCreativeSize(bannerView, success: { size in
         guard let bannerView = bannerView as? AdManagerBannerView else { return }
