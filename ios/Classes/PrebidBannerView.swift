@@ -10,6 +10,8 @@ class PrebidBannerView: NSObject {
     /// Container view that holds ad views
     private var container: UIView
 
+    private var gamBanner: AdManagerBannerView?
+
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
     
@@ -18,6 +20,9 @@ class PrebidBannerView: NSObject {
     
     // Prebid reward ad unit
     private var rewardedAdUnit: RewardedAdUnit?
+
+    private var adSize: CGSize?
+    private var configId: String?
 
     // MARK: - Constants
 
@@ -113,20 +118,54 @@ class PrebidBannerView: NSObject {
     // MARK: - Ad Loading Methods
 
     private func loadBanner(params: AdParameters) {
-        let adSize = CGSize(width: Int(params.width), height: Int(params.height))
-        let eventHandler = GAMBannerEventHandler(
-            adUnitID: params.adUnitId,
-            validGADAdSizes: [AdSizeBanner].map(nsValue)
-        )
-        
-        let prebidBannerView: PrebidMobile.BannerView = BannerView(
-            frame: CGRect(origin: .zero, size: adSize),
-            configID: params.configId,
-            adSize: adSize,
-            eventHandler: eventHandler
-        )
+        adSize = CGSize(width: Int(params.width), height: Int(params.height))
+        configId = params.configId
+        guard let adSize, let configId else { return }
+
+        let adUnit = BannerAdUnit(configId: configId, size: adSize)
+        adUnit.setAutoRefreshMillis(time: 30000)
+
+        // Configure banner parameters
+        let parameters = BannerParameters()
+        parameters.api = [Signals.Api.MRAID_2]
+        adUnit.bannerParameters = parameters
+
+        // Create a GAMBannerView
+        gamBanner = AdManagerBannerView(adSize: adSizeFor(cgSize: adSize))
+        gamBanner?.adUnitID = params.adUnitId
+        gamBanner?.delegate = self
+
+        // Add GMA SDK banner view to the app UI
+        if let gamBanner {
+            addBannerViewToView(gamBanner)
+        }
+
+        // Make a bid request to Prebid Server
+        let gamRequest = AdManagerRequest()
+        adUnit.fetchDemand(adObject: gamRequest) { [weak self] resultCode in
+            guard let self, let gamBanner = self.gamBanner else { return }
+            print("Prebid demand fetch for GAM \(resultCode.name())")
+
+            // Load GAM Ad
+            gamBanner.load(gamRequest)
+        }
+    }
+
+    private func loadPrebidBanner() {
+        guard let adSize, let configId else { return }
+
+        let prebidBannerView = BannerView(frame: CGRect(origin: .zero, size: adSize),
+                                      configID: configId,
+                                      adSize: adSize)
+
+        // Configure the BannerView
         prebidBannerView.delegate = self
+        prebidBannerView.adFormat = .banner
+
+        // Add Prebid banner view to the app UI
         addBannerViewToView(prebidBannerView)
+
+        // Load the banner ad
         prebidBannerView.loadAd()
     }
 
@@ -156,7 +195,7 @@ class PrebidBannerView: NSObject {
         return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
     }
 
-    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
+    private func addBannerViewToView<T: UIView>(_ bannerView: T) {
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
 
@@ -219,6 +258,33 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
     
     func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
+    }
+
+}
+
+// MARK: - GADBannerViewDelegate
+
+extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
+
+    func bannerViewDidReceiveAd(_ bannerView: GoogleMobileAds.BannerView) {
+         if let gamBanner {
+             addBannerViewToView(gamBanner)
+         }
+        AdViewUtils.findPrebidCreativeSize(bannerView, success: { size in
+        guard let bannerView = bannerView as? AdManagerBannerView else { return }
+        bannerView.resize(adSizeFor(cgSize: size))
+    }, failure: { (error) in
+        print("Error occuring during searching for Prebid creative size: \(error)")
+    })
+}
+
+    func bannerView(_ bannerView: GoogleMobileAds.BannerView,
+                    didFailToReceiveAdWithError error: Error) {
+        print("GAM did fail to receive ad with error: \(error)")
+
+        // Fallback to Prebid ad when GAM fails
+        gamBanner = nil
+        loadPrebidBanner()
     }
 
 }
