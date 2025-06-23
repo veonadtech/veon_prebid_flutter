@@ -231,7 +231,6 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
 
     func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
         NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
-        let configId = bannerView.configID
         channel.invokeMethod("onAdFailed", arguments: error.localizedDescription)
     }
 
@@ -248,10 +247,6 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
     func bannerViewWillPresentModal(_ bannerView: PrebidMobile.BannerView) {
         let configId = bannerView.configID
         channel.invokeMethod("onAdDisplayed", arguments: configId)
-    }
-    
-    func bannerViewDidDismissModal(_ bannerView: PrebidMobile.BannerView) {
-        
     }
 
 }
@@ -273,16 +268,8 @@ extension PrebidBannerView: FullScreenContentDelegate {
         channel.invokeMethod("onAdClicked", arguments: configId)
     }
     
-    func adWillDismissFullScreenContent(_ ad: any FullScreenPresentingAd) {
-        
-    }
-    
     func adWillPresentFullScreenContent(_ ad: any FullScreenPresentingAd) {
         channel.invokeMethod("onAdDisplayed", arguments: configId)
-    }
-    
-    func adDidDismissFullScreenContent(_ ad: any FullScreenPresentingAd) {
-        
     }
 
 }
