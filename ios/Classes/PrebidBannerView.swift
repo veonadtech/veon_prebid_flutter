@@ -163,14 +163,19 @@ class PrebidBannerView: NSObject {
         
         NSLayoutConstraint.activate([
             paddingView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
-            paddingView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5)
+            paddingView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
+            paddingView.centerXAnchor.constraint(equalTo: paddingView.centerXAnchor),
+            paddingView.centerYAnchor.constraint(equalTo: paddingView.centerYAnchor)
         ])
         
+        bannerView.translatesAutoresizingMaskIntoConstraints = false
         paddingView.addSubview(bannerView)
         
         NSLayoutConstraint.activate([
-            bannerView.centerXAnchor.constraint(equalTo: paddingView.centerXAnchor),
-            bannerView.centerYAnchor.constraint(equalTo: paddingView.centerYAnchor)
+            bannerView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
+            bannerView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
+            bannerView.centerXAnchor.constraint(equalTo: bannerView.centerXAnchor),
+            bannerView.centerYAnchor.constraint(equalTo: bannerView.centerYAnchor)
         ])
     }
 
