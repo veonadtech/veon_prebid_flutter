@@ -157,17 +157,37 @@ class PrebidBannerView: NSObject {
     }
 
     private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
-        bannerView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(bannerView)
-
+        let paddingView = UIView()
+        paddingView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(paddingView)
+        
         NSLayoutConstraint.activate([
-            bannerView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
-            bannerView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
-
-            bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
-
+            paddingView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
+            paddingView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5)
+        ])
+        
+        paddingView.addSubview(bannerView)
+        
+        NSLayoutConstraint.activate([
+            bannerView.centerXAnchor.constraint(equalTo: paddingView.centerXAnchor),
+            bannerView.centerYAnchor.constraint(equalTo: paddingView.centerYAnchor)
         ])
     }
+
+    
+//    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
+//        bannerView.translatesAutoresizingMaskIntoConstraints = false
+//        container.addSubview(bannerView)
+//
+//        NSLayoutConstraint.activate([
+//            bannerView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
+//            bannerView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
+//
+////            bannerView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+////            bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+//
+//        ])
+  //  }
 
 }
 
