@@ -177,6 +177,7 @@ class PrebidView internal constructor(
         Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
         val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
         val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
+        adView.setAutoRefreshDelay(refreshInterval)
         adView.setBannerListener(object : BannerViewListener {
             override fun onAdLoaded(bannerView: BannerView?) {
                 channel.invokeMethod("onAdLoaded", CONFIG_ID);
@@ -189,7 +190,7 @@ class PrebidView internal constructor(
             }
 
             override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
-                channel.invokeMethod("onAdFailed", CONFIG_ID);
+                channel.invokeMethod("onAdFailed", exception?.message);
                 Log.d(Tag, "onAdFailed: $exception")
             }
 
@@ -232,7 +233,7 @@ class PrebidView internal constructor(
             }
 
             override fun onAdFailed(interstitialAdUnit: InterstitialAdUnit?, exception: AdException?) {
-                channel.invokeMethod("onAdFailed", CONFIG_ID);
+                channel.invokeMethod("onAdFailed", exception?.message);
                 Log.d(Tag, "onAdFailed: $exception")
             }
 
@@ -266,7 +267,7 @@ class PrebidView internal constructor(
                 }
 
                 override fun onAdFailed(p0: RewardedAdUnit?, exception: AdException?) {
-                    channel.invokeMethod("onAdFailed", CONFIG_ID)
+                    channel.invokeMethod("onAdFailed", exception?.message);
                     Log.d(Tag, "onAdFailed: $exception")
                 }
 

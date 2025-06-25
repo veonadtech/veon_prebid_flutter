@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:setupad_prebid_flutter/ad_type.dart';
+import 'package:setupad_prebid_flutter/event_listener.dart';
 import 'package:setupad_prebid_flutter/prebid_mobile.dart';
 import 'package:setupad_prebid_flutter/prebid_ads.dart';
 
@@ -84,58 +85,64 @@ class _MyAppState extends State<MyAppState> {
 
   List<Widget> adContainer = [];
 
-  PrebidAd simpleTestBanner = const PrebidAd(
+  PrebidAd simpleTestBanner = PrebidAd(
     adType: AdType.banner,
     configId: 'test_320x50',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 320,
     height: 50,
     refreshInterval: 30,
+    eventListener: _PrebidEventListener(),
   );
 
-  PrebidAd simpleBanner = const PrebidAd(
+  PrebidAd simpleBanner = PrebidAd(
     adType: AdType.banner,
     configId: 'prebid-ita-banner-320-50',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 320,
     height: 50,
     refreshInterval: 30,
+    eventListener: _PrebidEventListener(),
   );
 
-  PrebidAd auctionSimpleBanner = const PrebidAd(
+  PrebidAd auctionSimpleBanner = PrebidAd(
     adType: AdType.banner,
     configId: 'prebid-ita-banner-300-50',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 300,
     height: 50,
     refreshInterval: 30,
+    eventListener: _PrebidEventListener(),
   );
 
-  PrebidAd auctionSimpleBanner300x250 = const PrebidAd(
+  PrebidAd auctionSimpleBanner300x250 = PrebidAd(
     adType: AdType.banner,
     configId: 'prebid-ita-banner-300-250',
     adUnitId: '/6355419/Travel/Europe/France/Paris',
     width: 300,
     height: 250,
     refreshInterval: 30,
+    eventListener: _PrebidEventListener(),
   );
 
-  PrebidAd interstitial = const PrebidAd(
+  PrebidAd interstitial = PrebidAd(
     adType: AdType.interstitial,
     configId: 'test_interstitial',
     adUnitId: '/21775744923/example/interstitial',
     width: 50,
     height: 50,
     refreshInterval: null,
+    eventListener: _PrebidEventListener(),
   );
 
-  PrebidAd rewardVideo = const PrebidAd(
+  PrebidAd rewardVideo = PrebidAd(
     adType: AdType.rewardVideo,
     configId: 'test_video_content_320x100',
     adUnitId: '/21775744923/example/rewarded',
     width: 100,
     height: 100,
     refreshInterval: null,
+    eventListener: _PrebidEventListener(),
   );
 
   @override
@@ -217,3 +224,40 @@ class _MyAppState extends State<MyAppState> {
   }
 }
 
+class _PrebidEventListener implements EventListener {
+  @override
+  onAdLoaded(String configId) {
+    print('AAAA Ad loaded: $configId');
+    // Your logic
+  }
+
+  @override
+  onAdDisplayed(String configId) {
+    print('AAAA Ad displayed: $configId');
+    // Your logic
+  }
+
+  @override
+  onAdFailed(String errorMessage) {
+    print('AAAA Ad failed: $errorMessage');
+    // Your logic
+  }
+
+  @override
+  onAdClicked(String configId) {
+    print('AAAA Ad clicked: $configId');
+    // Your logic
+  }
+
+  @override
+  onAdUrlClicked(String configId) {
+    print('AAAA Ad URL clicked: $configId');
+    // Your logic
+  }
+
+  @override
+  onAdClosed(String configId) {
+    print('AAAA Ad closed: $configId');
+    // Your logic
+  }
+}
