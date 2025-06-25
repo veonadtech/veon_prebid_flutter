@@ -69,7 +69,6 @@ class PrebidAd extends StatelessWidget {
     });
 
     _channel.setMethodCallHandler(_methodCallHandler);
-
   }
 
   Future<dynamic> _methodCallHandler(MethodCall call) async {

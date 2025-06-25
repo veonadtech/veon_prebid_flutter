@@ -189,8 +189,6 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
         let rootViewController = getRootViewController()
         let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
         interstitial.show(from: controllerToPresent)
-
-        channel.invokeMethod("onAdDisplayed", arguments: configId)
     }
 
     func interstitial(_ interstitial: InterstitialRenderingAdUnit, didFailToReceiveAdWithError error: Error?) {
@@ -211,6 +209,11 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
     func interstitialDidCloseAd(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: Interstitial is closed")
         channel.invokeMethod("onAdClosed", arguments: configId)
+    }
+    
+    func interstitialWillPresentAd(_ interstitial: InterstitialRenderingAdUnit) {
+        NSLog("LOG: Interstitial ad displayed")
+        channel.invokeMethod("onAdDisplayed", arguments: configId)
     }
 
 }
@@ -246,29 +249,6 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
     
     func bannerViewWillPresentModal(_ bannerView: PrebidMobile.BannerView) {
         let configId = bannerView.configID
-        channel.invokeMethod("onAdDisplayed", arguments: configId)
-    }
-
-}
-
-// MARK: - FullScreenContentDelegate
-
-extension PrebidBannerView: FullScreenContentDelegate {
-
-    func ad(_ ad: any FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: any Error) {
-        NSLog("LOG: GAM Interstitial failed \(error.localizedDescription)")
-        channel.invokeMethod("onAdFailed", arguments: error.localizedDescription)
-    }
-    
-    func adDidRecordImpression(_ ad: any FullScreenPresentingAd) {
-        channel.invokeMethod("onAdDisplayed", arguments: configId)
-    }
-    
-    func adDidRecordClick(_ ad: any FullScreenPresentingAd) {
-        channel.invokeMethod("onAdClicked", arguments: configId)
-    }
-    
-    func adWillPresentFullScreenContent(_ ad: any FullScreenPresentingAd) {
         channel.invokeMethod("onAdDisplayed", arguments: configId)
     }
 
@@ -313,6 +293,7 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
         NSLog("LOG: Rewarded ad will leave application ad")
         channel.invokeMethod("onAdUrlClicked", arguments: configId)
     }
+
 }
 
 // MARK: - Model
