@@ -131,9 +131,9 @@ class PrebidBannerView: NSObject {
             adSize: adSize,
             eventHandler: eventHandler
         )
-        prebidBannerView.refreshInterval = params.refreshInterval
-        prebidBannerView.delegate = self
-        prebidBannerView.loadAd()
+        prebidBannerView?.refreshInterval = params.refreshInterval
+        prebidBannerView?.delegate = self
+        prebidBannerView?.loadAd()
     }
 
     private func loadInterstitialRendering(params: AdParameters) {
