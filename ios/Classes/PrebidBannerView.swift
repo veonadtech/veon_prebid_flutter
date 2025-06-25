@@ -193,23 +193,12 @@ class PrebidBannerView: NSObject {
     }
 
     private func addGamBannerViewToView(_ bannerView: AdManagerBannerView) {
-        let paddingView = UIView()
-        paddingView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(paddingView)
-
-        NSLayoutConstraint.activate([
-            paddingView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
-            paddingView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
-            paddingView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            paddingView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
-        ])
-
         bannerView.translatesAutoresizingMaskIntoConstraints = false
-        paddingView.addSubview(bannerView)
+        container.addSubview(bannerView)
 
         NSLayoutConstraint.activate([
-            bannerView.centerXAnchor.constraint(equalTo: paddingView.centerXAnchor),
-            bannerView.centerYAnchor.constraint(equalTo: paddingView.centerYAnchor)
+            bannerView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
         ])
     }
 
