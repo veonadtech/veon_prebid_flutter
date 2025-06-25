@@ -131,6 +131,7 @@ class PrebidBannerView: NSObject {
             adSize: adSize,
             eventHandler: eventHandler
         )
+        prebidBannerView?.refreshInterval = params.refreshInterval
         prebidBannerView?.delegate = self
         prebidBannerView?.loadAd()
     }
@@ -345,6 +346,7 @@ private struct AdParameters {
     let width: Double
     let height: Double
     let adType: String
+    let refreshInterval: Double
 
     init(from dictionary: [String: Any]) {
         adUnitId = dictionary["adUnitId"] as? String ?? ""
@@ -352,6 +354,7 @@ private struct AdParameters {
         height = dictionary["height"] as? Double ?? 0
         width = dictionary["width"] as? Double ?? 0
         adType = dictionary["adType"] as? String ?? ""
+        refreshInterval = dictionary["refreshInterval"] as? Double ?? 0
     }
 
 }
