@@ -10,6 +10,9 @@ class PrebidBannerView: NSObject {
     /// Container view that holds ad views
     private var container: UIView
 
+    /// Prebid banner view
+    private var prebidBannerView: PrebidMobile.BannerView?
+
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
 
@@ -121,16 +124,15 @@ class PrebidBannerView: NSObject {
             adUnitID: params.adUnitId,
             validGADAdSizes: [AdSizeBanner].map(nsValue)
         )
-
-        let prebidBannerView: PrebidMobile.BannerView = BannerView(
+        
+        prebidBannerView = BannerView(
             frame: CGRect(origin: .zero, size: adSize),
             configID: params.configId,
             adSize: adSize,
             eventHandler: eventHandler
         )
-        prebidBannerView.delegate = self
-        addBannerViewToView(prebidBannerView)
-        prebidBannerView.loadAd()
+        prebidBannerView?.delegate = self
+        prebidBannerView?.loadAd()
     }
 
     private func loadInterstitialRendering(params: AdParameters) {
@@ -158,7 +160,28 @@ class PrebidBannerView: NSObject {
         return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
     }
 
-    private func addBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
+    private func addGamBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
+        let paddingView = UIView()
+        paddingView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(paddingView)
+
+        NSLayoutConstraint.activate([
+            paddingView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
+            paddingView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
+            paddingView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            paddingView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+
+        bannerView.translatesAutoresizingMaskIntoConstraints = false
+        paddingView.addSubview(bannerView)
+
+        NSLayoutConstraint.activate([
+            bannerView.centerXAnchor.constraint(equalTo: paddingView.centerXAnchor),
+            bannerView.centerYAnchor.constraint(equalTo: paddingView.centerYAnchor)
+        ])
+    }
+
+    private func addPrebidBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(bannerView)
 
@@ -166,9 +189,20 @@ class PrebidBannerView: NSObject {
             bannerView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
             bannerView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
 
+            bannerView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
-
         ])
+    }
+
+    private func isBannerViewWithGamAd(_ bannerView: PrebidMobile.BannerView) -> Bool {
+        func findGAMBanner(in view: UIView) -> Bool {
+            if view is AdManagerBannerView {
+                return true
+            }
+            return view.subviews.contains { findGAMBanner(in: $0) }
+        }
+
+        return findGAMBanner(in: bannerView)
     }
 
 }
@@ -213,7 +247,7 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
         NSLog("LOG: Interstitial is closed")
         channel.invokeMethod("onAdClosed", arguments: configId)
     }
-    
+
     func interstitialWillPresentAd(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: Interstitial ad displayed")
         channel.invokeMethod("onAdDisplayed", arguments: configId)
@@ -233,6 +267,8 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
         NSLog("LOG: Prebid banner loaded successfully")
         let configId = bannerView.configID
         channel.invokeMethod("onAdLoaded", arguments: configId)
+        isBannerViewWithGamAd(bannerView) ? addGamBannerViewToView(bannerView)
+                                          : addPrebidBannerViewToView(bannerView)
     }
 
     func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
@@ -249,7 +285,7 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
         let configId = bannerView.configID
         channel.invokeMethod("onAdClicked", arguments: configId)
     }
-    
+
     func bannerViewWillPresentModal(_ bannerView: PrebidMobile.BannerView) {
         let configId = bannerView.configID
         channel.invokeMethod("onAdDisplayed", arguments: configId)
