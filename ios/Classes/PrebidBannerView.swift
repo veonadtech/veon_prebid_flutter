@@ -26,6 +26,7 @@ class PrebidBannerView: NSObject {
 
     private var adSize: CGSize?
     private var configId: String?
+    private var refreshInterval: Double?
 
     // MARK: - Constants
 
@@ -124,6 +125,7 @@ class PrebidBannerView: NSObject {
     private func loadGamBanner(params: AdParameters) {
         adSize = CGSize(width: Int(params.width), height: Int(params.height))
         configId = params.configId
+        refreshInterval = params.refreshInterval
         guard let adSize, let configId else {
             print("Error: adSize or configId is nil")
             return
@@ -135,6 +137,7 @@ class PrebidBannerView: NSObject {
         let parameters = BannerParameters()
         parameters.api = [Signals.Api.MRAID_2]
         adUnit.bannerParameters = parameters
+        adUnit.setAutoRefreshMillis(time: params.refreshInterval * 1000)
         
         // Create a GAMBannerView
         gamBanner = AdManagerBannerView(adSize: adSizeFor(cgSize: adSize))
@@ -162,7 +165,10 @@ class PrebidBannerView: NSObject {
         // Configure the BannerView
         prebidBannerView?.delegate = self
         prebidBannerView?.adFormat = .banner
-        
+        if let refreshInterval {
+            prebidBannerView?.refreshInterval = refreshInterval
+        }
+            
         // Load the banner ad
         prebidBannerView?.loadAd()
     }
