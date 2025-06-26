@@ -153,69 +153,89 @@ class _MyAppState extends State<MyAppState> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            ElevatedButton(
-              child: const Text('clear'),
-              onPressed: () {
-                setState(() {
-                  adContainer.clear();
-                });
-              },
+            Container(
+              height: MediaQuery.of(context).size.height -
+                  AppBar().preferredSize.height -
+                  MediaQuery.of(context).padding.top,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    ElevatedButton(
+                      child: const Text('clear'),
+                      onPressed: () {
+                        setState(() {
+                          adContainer.clear();
+                        });
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text('simple test banner 320x50'),
+                      onPressed: () {
+                        setState(() {
+                          adContainer.add(simpleTestBanner);
+                        });
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text('simple banner 320x50'),
+                      onPressed: () {
+                        setState(() {
+                          adContainer.add(simpleBanner);
+                        });
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text('auction banner 300x50'),
+                      onPressed: () {
+                        setState(() {
+                          adContainer.add(auctionSimpleBanner);
+                        });
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text('auction banner 300x250'),
+                      onPressed: () {
+                        setState(() {
+                          adContainer.add(auctionSimpleBanner300x250);
+                        });
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text('interstitial'),
+                      onPressed: () {
+                        setState(() {
+                          adContainer.add(interstitial);
+                        });
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text('reward video'),
+                      onPressed: () {
+                        setState(() {
+                          adContainer.add(rewardVideo);
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 40),
+                    const Icon(Icons.arrow_downward, size: 60, color: Colors.grey),
+                    const SizedBox(height: 20),
+                    const Text(
+                      '👇 Scroll down for ads 👇',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            ElevatedButton(
-              child: const Text('simple test banner 320x50'),
-              onPressed: () {
-                setState(() {
-                  adContainer.add(simpleTestBanner);
-                });
-              },
-            ),
-            ElevatedButton(
-              child: const Text('simple banner 320x50'),
-              onPressed: () {
-                setState(() {
-                  adContainer.add(simpleBanner);
-                });
-              },
-            ),
-            ElevatedButton(
-              child: const Text('auction banner 300x50'),
-              onPressed: () {
-                setState(() {
-                  adContainer.add(auctionSimpleBanner);
-                });
-              },
-            ),
-            ElevatedButton(
-              child: const Text('auction banner 300x250'),
-              onPressed: () {
-                setState(() {
-                  adContainer.add(auctionSimpleBanner300x250);
-                });
-              },
-            ),
-            ElevatedButton(
-              child: const Text('interstitial'),
-              onPressed: () {
-                setState(() {
-                  adContainer.add(interstitial);
-                });
-              },
-            ),
-            ElevatedButton(
-              child: const Text('reward video'),
-              onPressed: () {
-                setState(() {
-                  adContainer.add(rewardVideo);
-                });
-              },
-            ),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
             Column(
               children: adContainer,
             ),
+            const SizedBox(height: 100),
           ],
         ),
       ),
