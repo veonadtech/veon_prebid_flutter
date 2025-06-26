@@ -187,9 +187,6 @@ class PrebidBannerView: NSObject {
         container.addSubview(bannerView)
 
         NSLayoutConstraint.activate([
-            bannerView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
-            bannerView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
-
             bannerView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
         ])
