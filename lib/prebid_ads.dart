@@ -86,7 +86,7 @@ class _PrebidAdState extends State<PrebidAd> {
 
     _channel = MethodChannel(chanelName);
     debugPrint("PrebidPluginLog view created");
-    _channel!.invokeMethod('setParams', {
+    _channel?.invokeMethod('setParams', {
       "adType": widget.adType.name,
       "configId": widget.configId,
       "adUnitId": widget.adUnitId,
@@ -95,7 +95,7 @@ class _PrebidAdState extends State<PrebidAd> {
       "refreshInterval": widget.refreshInterval
     });
 
-    _channel!.setMethodCallHandler(_methodCallHandler);
+    _channel?.setMethodCallHandler(_methodCallHandler);
   }
 
   Future<dynamic> _methodCallHandler(MethodCall call) async {
