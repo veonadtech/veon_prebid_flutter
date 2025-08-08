@@ -85,13 +85,8 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     private fun initializePrebidMobile(prebidHost: String, prebidAccountID: String, timeout: Int, pbs: Boolean) {
         activityFuture.thenAccept { activity ->
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
-            PrebidMobile.setPrebidServerHost(
-                Host.createCustomHost(
-                    prebidHost, //"https://prebid.veonadx.com/openrtb2/auction"
-                )
-            )
 
-            PrebidMobile.initializeSdk(activity) { status ->
+            PrebidMobile.initializeSdk(activity, prebidHost) { status ->
                 when (status) {
                     InitializationStatus.SUCCEEDED -> {
                         Log.d(Tag, "Prebid Mobile SDK initialized successfully!")
@@ -114,7 +109,6 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
             PrebidMobile.checkGoogleMobileAdsCompatibility(MobileAds.getVersion().toString())
             PrebidMobile.setTimeoutMillis(timeout)
             PrebidMobile.setShareGeoLocation(true)
-            PrebidMobile.useExternalBrowser = true
         }
     }
 }

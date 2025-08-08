@@ -31,6 +31,7 @@ import org.prebid.mobile.api.rendering.listeners.RewardedAdUnitListener
 import org.prebid.mobile.eventhandlers.GamBannerEventHandler
 import org.prebid.mobile.eventhandlers.GamInterstitialEventHandler
 import org.prebid.mobile.eventhandlers.GamRewardedEventHandler
+import org.prebid.mobile.rendering.interstitial.rewarded.Reward
 
 /**
  * A class that is responsible for creating and adding banner and interstitial ads to the Flutter app's view, as well as pausing and resuming auction
@@ -199,10 +200,6 @@ class PrebidView internal constructor(
                 Log.d(Tag, "onAdClicked:")
             }
 
-            override fun onAdUrlClicked(url: String?) {
-                channel.invokeMethod("onAdUrlClicked", CONFIG_ID);
-                Log.d(Tag, url ?: "Url Clicked")
-            }
 
             override fun onAdClosed(bannerView: BannerView?) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID);
@@ -281,7 +278,7 @@ class PrebidView internal constructor(
                     Log.d(Tag, "onAdClosed:")
                 }
 
-                override fun onUserEarnedReward(p0: RewardedAdUnit?) {
+                override fun onUserEarnedReward(p0: RewardedAdUnit?, reward:Reward?) {
                     channel.invokeMethod("onUserEarnedReward", CONFIG_ID)
                     Log.d(Tag, "onUserEarnedReward:")
                 }
