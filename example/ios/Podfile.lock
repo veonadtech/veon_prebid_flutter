@@ -10,14 +10,14 @@ PODS:
   - setupad_prebid_flutter (0.0.1):
     - Flutter
     - Google-Mobile-Ads-SDK (= 12.3.0)
-    - VeonPrebidMobile (= 0.0.2)
-    - VeonPrebidMobileGAMEventHandlers (= 0.0.2)
-  - VeonPrebidMobile (0.0.2):
-    - VeonPrebidMobile/core (= 0.0.2)
-  - VeonPrebidMobile/core (0.0.2)
-  - VeonPrebidMobileGAMEventHandlers (0.0.2):
+    - VeonPrebidMobile (= 0.0.3)
+    - VeonPrebidMobileGAMEventHandlers (= 0.0.3)
+  - VeonPrebidMobile (0.0.3):
+    - VeonPrebidMobile/core (= 0.0.3)
+  - VeonPrebidMobile/core (0.0.3)
+  - VeonPrebidMobileGAMEventHandlers (0.0.3):
     - Google-Mobile-Ads-SDK (>= 12.0.0)
-    - VeonPrebidMobile (= 0.0.2)
+    - VeonPrebidMobile (= 0.0.3)
 
 DEPENDENCIES:
   - app_tracking_transparency (from `.symlinks/plugins/app_tracking_transparency/ios`)
@@ -48,9 +48,9 @@ SPEC CHECKSUMS:
   Google-Mobile-Ads-SDK: 01b1b77e0bdba8b4027ae62e9bd52e5a95d930aa
   GoogleUserMessagingPlatform: f8d0cdad3ca835406755d0a69aa634f00e76d576
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
-  setupad_prebid_flutter: dc336ef3c8c115bf33b72b6f610a4012918eb183
-  VeonPrebidMobile: 5a0e66d425dc6e3d3d3a04a15d86bd39489706f3
-  VeonPrebidMobileGAMEventHandlers: d8f2da7454bc0652e92bb65239be28230b36eb5a
+  setupad_prebid_flutter: bf6a4052db112184b3bbf5ab857acaac21d08754
+  VeonPrebidMobile: f199590fdf1d49ebf4d0324fd7073a9bb4992218
+  VeonPrebidMobileGAMEventHandlers: 7a4280c1ea0fa38c989a817676eee84034ed39f1
 
 PODFILE CHECKSUM: 4e8f8b2be68aeea4c0d5beb6ff1e79fface1d048
 
