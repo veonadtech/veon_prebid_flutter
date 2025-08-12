@@ -3,6 +3,8 @@
 ## 0.0.7
 # Changed
 * The widget sets the banner size only after the ad is loaded
+* Android version updated to 0.0.7
+* iOS version updated to 0.0.3
 
 # Added
 * added time refresh interval for custom banner's method
