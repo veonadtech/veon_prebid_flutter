@@ -7,7 +7,5 @@ abstract class EventListener {
 
   onAdClicked(String configId);
 
-  onAdUrlClicked(String configId);
-
   onAdClosed(String configId);
 }
