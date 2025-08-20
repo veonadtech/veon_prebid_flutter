@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:setupad_prebid_flutter/ad_type.dart';
 import 'package:setupad_prebid_flutter/event_listener.dart';
 
-class PrebidAd extends StatefulWidget {
+class PrebidAd extends StatelessWidget {
   const PrebidAd({
     Key? key,
     required this.adType,
@@ -25,141 +25,112 @@ class PrebidAd extends StatefulWidget {
   final EventListener eventListener;
 
   @override
-  State<PrebidAd> createState() => _PrebidAdState();
-}
-
-class _PrebidAdState extends State<PrebidAd> {
-  bool _isAdLoaded = false;
-  bool _hasError = false;
-  MethodChannel? _channel;
-  int? _viewId;
-
-  @override
   Widget build(BuildContext context) {
-    SizedBox sizedBox;
-    if (_hasError) {
-      sizedBox = const SizedBox.shrink();
-    } else if (!_isAdLoaded) {
-      // width and height should not be equal 0.
-      sizedBox = SizedBox(
-        width: 0.001,
-        height: 0.001,
-        child: _buildPlatformView(),
-      );
-    } else
-      sizedBox = SizedBox(
-        width: widget.adType == AdType.banner ? widget.width?.toDouble() : 0,
-        height: widget.adType == AdType.banner ? widget.height?.toDouble() : 0,
-        child: _buildPlatformView(),
-      );
-
-    return sizedBox;
-  }
-
-  Widget _buildPlatformView() {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return AndroidView(
-          viewType: 'setupad.plugin.setupad_prebid_flutter',
-          onPlatformViewCreated: (int id) {
-            _onViewCreated(id, 'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
-          },
+        return SizedBox(
+          width: adType == AdType.banner ? width?.toDouble() : 1,
+          height: adType == AdType.banner ? height?.toDouble() : 1,
+          child: AndroidView(
+              viewType: 'setupad.plugin.setupad_prebid_flutter',
+              onPlatformViewCreated: (int id) {
+                onAndroidViewCreated(id);
+              }),
         );
       case TargetPlatform.iOS:
-        return UiKitView(
-          viewType: 'setupad.plugin.setupad_prebid_flutter',
-          onPlatformViewCreated: (int id) {
-            _onViewCreated(id, 'setupad.plugin.setupad_prebid_flutter/ios');
-          },
+        return SizedBox(
+          width: adType == AdType.banner ? width?.toDouble() : 1,
+          height: adType == AdType.banner ? height?.toDouble() : 1,
+          child: UiKitView(
+              viewType: 'setupad.plugin.setupad_prebid_flutter',
+              onPlatformViewCreated: (int id) {
+                onIOSViewCreated(id);
+              }),
         );
       default:
         return Text(
-          '$defaultTargetPlatform is not yet supported by the plugin',
-        );
+            '$defaultTargetPlatform is not yet supported by the plugin');
     }
   }
 
   ///A method that passes ad parameters to the PassParameters class
   ///The unique ID is used for method channel communication
-  void _onViewCreated(int id, String chanelName) {
-    _viewId = id;
-
-    _channel = MethodChannel(chanelName);
+  void onAndroidViewCreated(int id) {
+    // PassParameters( adType, configId, adUnitId, height, width, refreshInterval, id);
+    MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel_$id');
     debugPrint("PrebidPluginLog view created");
-    _channel?.invokeMethod('setParams', {
-      "adType": widget.adType.name,
-      "configId": widget.configId,
-      "adUnitId": widget.adUnitId,
-      "height": widget.height,
-      "width": widget.width,
-      "refreshInterval": widget.refreshInterval
+    _channel.invokeMethod('setParams', {
+      "adType": adType.name,
+      "configId": configId,
+      "adUnitId": adUnitId,
+      "height": height,
+      "width": width,
+      "refreshInterval": refreshInterval
     });
 
-    _channel?.setMethodCallHandler(_methodCallHandler);
+    _channel.setMethodCallHandler(_methodCallHandler);
   }
 
   Future<dynamic> _methodCallHandler(MethodCall call) async {
     final configId = call.arguments.toString();
-
     switch (call.method) {
       case "onAdLoaded":
-        if (!_isAdLoaded) {
-          setState(() {
-            _isAdLoaded = true;
-          });
-        }
-        widget.eventListener.onAdLoaded(configId);
+        eventListener.onAdLoaded(configId);
         break;
       case "onAdDisplayed":
-        widget.eventListener.onAdDisplayed(configId);
+        eventListener.onAdDisplayed(configId);
         break;
       case "onAdFailed":
-        if (!_isAdLoaded) {
-          setState(() {
-            _hasError = true;
-          });
-        }
-        widget.eventListener.onAdFailed(configId);
+        eventListener.onAdFailed(configId);
         break;
       case "onAdClicked":
-        widget.eventListener.onAdClicked(configId);
-        break;
-      case "onAdUrlClicked":
-        widget.eventListener.onAdUrlClicked(configId);
+        eventListener.onAdClicked(configId);
         break;
       case "onAdClosed":
-        widget.eventListener.onAdClosed(configId);
+        eventListener.onAdClosed(configId);
         break;
     }
+  }
+
+  void onIOSViewCreated(int id) {
+    const MethodChannel _channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
+    debugPrint("ios set parameters");
+    _channel.invokeMethod('setParams', {
+      "adType": adType.name,
+      "configId": configId,
+      "adUnitId": adUnitId,
+      "height": height,
+      "width": width,
+      "refreshInterval": refreshInterval
+    });
+
+    _channel.setMethodCallHandler(_methodCallHandler);
   }
 
   ///A method that pauses Prebid auction
-  void pauseAuction() {
-    if (_viewId != null) {
-      debugPrint("PrebidPluginLog pauseAuction");
-      _channel?.invokeMethod('pauseAuction');
-    }
+  void pauseAuction(){
+    int id=0;
+    debugPrint("PrebidPluginLog pauseAuction");
+    MethodChannel _channel = MethodChannel(
+        'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
+    _channel.invokeMethod('pauseAuction');
   }
 
   ///A method that resumes Prebid auction
-  void resumeAuction() {
-    if (_viewId != null) {
-      debugPrint("PrebidPluginLog resumeAuction");
-      _channel?.invokeMethod('resumeAuction');
-    }
+  void resumeAuction(){
+    int id=0;
+    debugPrint("PrebidPluginLog resumeAuction");
+    MethodChannel _channel = MethodChannel(
+        'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
+    _channel.invokeMethod('resumeAuction');
   }
 
   ///A method that destroys Prebid auction
-  void destroyAuction() {
-    if (_viewId != null) {
-      debugPrint("PrebidPluginLog destroyAuction");
-      _channel?.invokeMethod('destroyAuction');
-    }
-  }
-
-  @override
-  void dispose() {
-    _channel?.setMethodCallHandler(null);
-    super.dispose();
+  void destroyAuction(){
+    int id=0;
+    debugPrint("PrebidPluginLog destroyAuction");
+    MethodChannel _channel = MethodChannel(
+        'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
+    _channel.invokeMethod('destroyAuction');
   }
 }
