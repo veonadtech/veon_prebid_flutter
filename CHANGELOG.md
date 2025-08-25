@@ -2,7 +2,7 @@
 
 ## 0.0.7.2
 # Added
-* Added MultiBanner and MultiInterstitial methods (waterfall with SDK priority list)
+* Added  MultiInterstitial method (waterfall with SDK priority list)
 
 ## 0.0.7
 # Changed
