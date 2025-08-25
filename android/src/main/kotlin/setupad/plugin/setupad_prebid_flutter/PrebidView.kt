@@ -21,7 +21,10 @@ import io.flutter.plugin.platform.PlatformView
 import org.prebid.mobile.BannerAdUnit
 import org.prebid.mobile.addendum.AdViewUtils
 import org.prebid.mobile.addendum.PbFindSizeError
+import org.prebid.mobile.api.data.SdkType
 import org.prebid.mobile.api.exceptions.AdException
+import org.prebid.mobile.api.multiadloader.MultiInterstitialAdLoader
+import org.prebid.mobile.api.multiadloader.listeners.MultiInterstitialAdListener
 import org.prebid.mobile.api.rendering.BannerView
 import org.prebid.mobile.api.rendering.InterstitialAdUnit
 import org.prebid.mobile.api.rendering.RewardedAdUnit
@@ -215,36 +218,49 @@ class PrebidView internal constructor(
      */
     private fun createInterstitial(AD_UNIT_ID: String, CONFIG_ID: String) {
         Log.d(Tag, "Prebid interstitial: $CONFIG_ID/$AD_UNIT_ID")
-        val eventHandler = GamInterstitialEventHandler(appActivity, AD_UNIT_ID)
-        interstitialAdUnit = InterstitialAdUnit(appActivity, CONFIG_ID, eventHandler)
-        interstitialAdUnit?.setInterstitialAdUnitListener(object : InterstitialAdUnitListener {
-            override fun onAdLoaded(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdLoaded", CONFIG_ID);
-                interstitialAdUnit?.show()
-                Log.d(Tag, "onAdLoaded:")
+
+        val interstitialLoader = MultiInterstitialAdLoader(
+            context = appActivity,
+            configId = CONFIG_ID,
+            gamAdUnitId = AD_UNIT_ID
+        )
+
+        interstitialLoader.setListener(object : MultiInterstitialAdListener {
+            override fun onAdLoaded(sdk: SdkType) {
+                channel.invokeMethod("onAdLoaded", CONFIG_ID)
+                Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name}")
+                interstitialLoader.showAd()
             }
 
-            override fun onAdDisplayed(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdDisplayed", CONFIG_ID);
-                Log.d(Tag, "onAdDisplayed:")
+            override fun onAdDisplayed(sdk: SdkType) {
+                channel.invokeMethod("onAdDisplayed", CONFIG_ID)
+                Log.d(Tag, "onAdDisplayed: Ad displayed from ${sdk.name}")
             }
 
-            override fun onAdFailed(interstitialAdUnit: InterstitialAdUnit?, exception: AdException?) {
-                channel.invokeMethod("onAdFailed", exception?.message);
-                Log.d(Tag, "onAdFailed: $exception")
+            override fun onAdFailed(error: String?, sdk: SdkType?) {
+                channel.invokeMethod("onAdFailed", error)
+                val sdkName = sdk?.name ?: "unknown SDK"
+                Log.d(Tag, "onAdFailed: $error (SDK: $sdkName)")
             }
 
-            override fun onAdClicked(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdClicked", CONFIG_ID);
-                Log.d(Tag, "onAdClicked:")
+            override fun onAdFailedToShow(error: String?, sdk: SdkType?) {
+                channel.invokeMethod("onAdFailed", error)
+                val sdkName = sdk?.name ?: "unknown SDK"
+                Log.d(Tag, "onAdFailedToShow: $error (SDK: $sdkName)")
             }
 
-            override fun onAdClosed(interstitialAdUnit: InterstitialAdUnit?) {
-                channel.invokeMethod("onAdClosed", CONFIG_ID);
-                Log.d(Tag, "onAdClosed:")
+            override fun onAdClicked(sdk: SdkType) {
+                channel.invokeMethod("onAdClicked", CONFIG_ID)
+                Log.d(Tag, "onAdClicked: Ad clicked from ${sdk.name}")
+            }
+
+            override fun onAdClosed(sdk: SdkType) {
+                channel.invokeMethod("onAdClosed", CONFIG_ID)
+                Log.d(Tag, "onAdClosed: Ad closed from ${sdk.name}")
             }
         })
-        interstitialAdUnit?.loadAd()
+
+        interstitialLoader.loadAd()
     }
 
     private fun createRewardVideo(AD_UNIT_ID: String, CONFIG_ID: String) {
