@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.0.7.2
+# Added
+* Added MultiBanner and MultiInterstitial methods (waterfall with SDK priority list)
+
 ## 0.0.7
 # Changed
 * The widget sets the banner size only after the ad is loaded
