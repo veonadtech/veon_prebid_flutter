@@ -3,6 +3,7 @@ import 'package:setupad_prebid_flutter/ad_type.dart';
 import 'package:setupad_prebid_flutter/event_listener.dart';
 import 'package:setupad_prebid_flutter/prebid_mobile.dart';
 import 'package:setupad_prebid_flutter/prebid_ads.dart';
+import 'package:setupad_prebid_flutter/prebid_sdk_listener.dart';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
@@ -12,7 +13,8 @@ void main() {
       "https://prebid-01.veonadx.com/openrtb2/auction",
       "test",
       30000,
-      true
+      true,
+      _PrebidSdkListener()
   );
   runApp(const MyApp());
 }
@@ -260,4 +262,22 @@ class _PrebidEventListener implements EventListener {
     print('AAAA Ad closed: $configId');
     // Your logic
   }
+}
+
+class _PrebidSdkListener implements PrebidSdkListener {
+
+  @override
+  onSdkInitialized(String status) {
+    // TODO: implement onSdkInitialized
+    debugPrint("PrebidSdkListener1: initialized $status");
+    throw UnimplementedError();
+  }
+
+  @override
+  onSdkInitializeFailed(String errorMessage) {
+    // TODO: implement onSdkInitializeFailed
+    debugPrint("PrebidSdkListener1: prebidSdkInitializeFailed $errorMessage");
+    throw UnimplementedError();
+  }
+
 }

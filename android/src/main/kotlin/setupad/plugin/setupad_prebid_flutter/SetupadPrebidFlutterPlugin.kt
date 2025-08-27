@@ -20,11 +20,12 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     private lateinit var activity: Activity
     private val Tag = "PrebidPluginLog"
     private val activityFuture = CompletableFuture<Activity>()
-
+    private lateinit var channel: MethodChannel
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         //Getting Prebid account ID through method channel and initializing Prebid Mobile SDK
         try {
+            channel = MethodChannel(binding.binaryMessenger, "setupad.plugin.setupad_prebid_flutter/sdk")
             MethodChannel(
                 binding.binaryMessenger,
                 "setupad.plugin.setupad_prebid_flutter/android"
@@ -90,18 +91,21 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                 when (status) {
                     InitializationStatus.SUCCEEDED -> {
                         Log.d(Tag, "Prebid Mobile SDK initialized successfully!")
+                        channel.invokeMethod("prebidSdkInitialized", "successfully");
                     }
                     InitializationStatus.SERVER_STATUS_WARNING -> {
                         Log.e(
                             Tag,
                             "Prebid Server status checking failed: $status\n${status.description}"
                         )
+                        channel.invokeMethod("prebidSdkInitialized", "$status\n${status.description}")
                     }
                     else -> {
                         Log.e(
                             Tag,
                             "Prebid Mobile SDK initialization error: $status\n${status.description}"
                         )
+                        channel.invokeMethod("prebidSdkInitializeFailed", "$status\n${status.description}");
                     }
                 }
             }
