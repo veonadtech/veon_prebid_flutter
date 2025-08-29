@@ -3,6 +3,7 @@
 ## 0.0.7.2
 # Added
 * Added  MultiInterstitial method (waterfall with SDK priority list)
+* Added show/hide methods for Interstitial
 
 # Fixed
 * Fixed bug with changing ver com.google.guava:listenablefuture
