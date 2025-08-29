@@ -14,6 +14,7 @@ class PrebidMobile {
   ///initializeSDK() passes to the native side Prebid account ID
   Future<void> initializeSDK(
       String prebidHost,
+      String configHost,
       String prebidAccountID,
       int timeoutMillis,
       bool pbsDebug,
@@ -25,7 +26,8 @@ class PrebidMobile {
     if(Platform.isAndroid){
       const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/android');
       return channel.invokeMethod('startPrebid', {
-        "host": prebidHost,
+        "prebidHost": prebidHost,
+        "configHost": configHost,
         "accountID": prebidAccountID,
         "timeoutMillis": timeoutMillis,
         "pbsDebug": pbsDebug

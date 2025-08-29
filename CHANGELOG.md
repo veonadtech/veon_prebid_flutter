@@ -4,6 +4,13 @@
 # Added
 * Added  MultiInterstitial method (waterfall with SDK priority list)
 
+# Fixed
+* Fixed bug with changing ver com.google.guava:listenablefuture
+
+## 0.0.7.1
+# Fixed
+* Fixed bug with the ad is not shown in iOS. 
+
 ## 0.0.7
 # Changed
 * The widget sets the banner size only after the ad is loaded

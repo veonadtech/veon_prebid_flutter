@@ -32,11 +32,12 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
             ).setMethodCallHandler { call, result ->
                 if (call.method == "startPrebid") {
                     val arguments = call.arguments as? Map<*, *>
-                    val prebidHost = arguments?.get("host") as? String ?: ""
+                    val prebidHost = arguments?.get("prebidHost") as? String ?: ""
+                    val configHost = arguments?.get("configHost") as? String ?: ""
                     val prebidAccountID = arguments?.get("accountID") as? String ?: ""
                     val timeoutMillis = arguments?.get("timeoutMillis") as? Int ?: 0
                     val pbsDebug = arguments?.get("pbsDebug") as? Boolean ?: false
-                    initializePrebidMobile(prebidHost, prebidAccountID, timeoutMillis, pbsDebug)
+                    initializePrebidMobile(prebidHost, configHost, prebidAccountID, timeoutMillis, pbsDebug)
                 } else {
                     result.notImplemented()
                 }
@@ -83,11 +84,13 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     /**
      * Prebid Mobile SDK initialization method
      */
-    private fun initializePrebidMobile(prebidHost: String, prebidAccountID: String, timeout: Int, pbs: Boolean) {
+    private fun initializePrebidMobile(prebidHost: String, configHost: String,
+                                       prebidAccountID: String, timeout: Int, pbs: Boolean) {
+        
         activityFuture.thenAccept { activity ->
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
 
-            PrebidMobile.initializeSdk(activity, prebidHost) { status ->
+            PrebidMobile.initializeSdk(activity, prebidHost, configHost) { status ->
                 when (status) {
                     InitializationStatus.SUCCEEDED -> {
                         Log.d(Tag, "Prebid Mobile SDK initialized successfully!")

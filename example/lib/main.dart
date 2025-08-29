@@ -10,7 +10,8 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
-      "https://prebid-01.veonadx.com/openrtb2/auction",
+      "https://prebid.veonadx.com/openrtb2/auction",
+      "https://dcdn.veonadx.com/sdk/uz.beeline.odp/config.json",
       "test",
       30000,
       true,
@@ -77,8 +78,8 @@ class _MyAppState extends State<MyAppState> {
   void _initializeAds() {
     simpleTestBanner = PrebidAd(
         adType: AdType.banner,
-        configId: 'janymda_main_blocks_ios_343x100',
-        adUnitId: '_/6355419/Travel/Europe/France/Paris',
+        configId: '_beeline_uz_android_manual_veon_test_320x50',
+        adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_manual_veon_test_320x50',
         width: 343,
         height: 100,
         refreshInterval: 30,
@@ -121,8 +122,8 @@ class _MyAppState extends State<MyAppState> {
 
     interstitial = PrebidAd(
         adType: AdType.interstitial,
-        configId: 'beeline_uz_android_wheel_test2_interstitial',
-        adUnitId: '_/23081467975/beeline_uzbekistan_android/beeline_uz_android_wheel_test2_interstitial',
+        configId: '_beeline_uz_android_wheel_test2_interstitial',
+        adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_wheel_test2_interstitial',
         width: 50,
         height: 50,
         refreshInterval: null,
