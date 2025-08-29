@@ -54,6 +54,12 @@ class PrebidView internal constructor(
     private var bannerAdUnit: BannerAdUnit? = null
     private var interstitialAdUnit: InterstitialAdUnit? = null
 
+    // NEW: keep a reference to MultiInterstitialAdLoader so we can control it later
+    private var interstitialLoader: MultiInterstitialAdLoader? = null
+    // Keep last used IDs so "loadInterstitial" works even if called later
+    private var lastInterstitialConfigId: String? = null
+    private var lastInterstitialAdUnitId: String? = null
+
     private val Tag = "PrebidPluginLog"
 
     /**
@@ -94,10 +100,55 @@ class PrebidView internal constructor(
      */
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "setParams" -> settingParameters(call)
-            "pauseAuction" -> onPause()
-            "resumeAuction" -> onResume()
-            "destroyAuction" -> onDestroy()
+            "setParams" -> {
+                settingParameters(call)
+                result.success(null)
+            }
+            "pauseAuction" -> {
+                onPause()
+                result.success(null)
+            }
+            "resumeAuction" -> {
+                onResume()
+                result.success(null)
+            }
+            "destroyAuction" -> {
+                onDestroy()
+                result.success(null)
+            }
+
+            // NEW: explicit interstitial control from Flutter
+            "loadInterstitial" -> {
+                // Recreate loader if needed and load
+                val cfg = lastInterstitialConfigId
+                val adu = lastInterstitialAdUnitId
+                if (cfg.isNullOrEmpty() || adu.isNullOrEmpty()) {
+                    Log.w(Tag, "loadInterstitial called but config/adUnit not set yet (call setParams first).")
+                } else {
+                    ensureInterstitialLoader(adu, cfg)
+                    interstitialLoader?.loadAd()
+                }
+                result.success(null)
+            }
+            "showInterstitial" -> {
+                interstitialLoader?.showAd()
+                result.success(null)
+            }
+            "hideInterstitial" -> {
+                // There is no "hide" for a shown interstitial; destroy to ensure it won't show again.
+                try {
+                    interstitialLoader?.destroy()
+                    interstitialAdUnit?.destroy()
+
+                } catch (e: Exception) {
+                    Log.w(Tag, "Error destroying interstitial loader: $e")
+                } finally {
+                    interstitialLoader = null
+                    interstitialAdUnit = null
+                }
+                result.success(null)
+            }
+
             else -> result.notImplemented()
         }
     }
@@ -215,21 +266,22 @@ class PrebidView internal constructor(
 
     /**
      * Setting interstitial ad parameters and fetching demand
+     * NOTE: No auto-show. Use channel "showInterstitial" to display later.
      */
     private fun createInterstitial(AD_UNIT_ID: String, CONFIG_ID: String) {
         Log.d(Tag, "Prebid interstitial: $CONFIG_ID/$AD_UNIT_ID")
 
-        val interstitialLoader = MultiInterstitialAdLoader(
-            context = appActivity,
-            configId = CONFIG_ID,
-            gamAdUnitId = AD_UNIT_ID
-        )
+        // Remember IDs for future explicit loads
+        lastInterstitialAdUnitId = AD_UNIT_ID
+        lastInterstitialConfigId = CONFIG_ID
 
-        interstitialLoader.setListener(object : MultiInterstitialAdListener {
+        ensureInterstitialLoader(AD_UNIT_ID, CONFIG_ID)
+
+        interstitialLoader?.setListener(object : MultiInterstitialAdListener {
             override fun onAdLoaded(sdk: SdkType) {
                 channel.invokeMethod("onAdLoaded", CONFIG_ID)
-                Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name}")
-                interstitialLoader.showAd()
+                Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name} (not auto-showing)")
+                // Do NOT call show here; Flutter must call "showInterstitial"
             }
 
             override fun onAdDisplayed(sdk: SdkType) {
@@ -257,10 +309,30 @@ class PrebidView internal constructor(
             override fun onAdClosed(sdk: SdkType) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID)
                 Log.d(Tag, "onAdClosed: Ad closed from ${sdk.name}")
+                // Optional: after close, you may want to auto-load next
+                // interstitialLoader?.loadAd()
             }
         })
 
-        interstitialLoader.loadAd()
+        // Kick off the first load now (won't auto-show)
+        interstitialLoader?.loadAd()
+    }
+
+    // Ensure we have a loader instance bound to these IDs; recreate if IDs changed
+    private fun ensureInterstitialLoader(adUnitId: String, configId: String) {
+        val current = interstitialLoader
+        if (current == null || lastInterstitialAdUnitId != adUnitId || lastInterstitialConfigId != configId) {
+            try {
+                current?.destroy()
+            } catch (e: Exception) {
+                Log.w(Tag, "Error destroying old interstitial loader: $e")
+            }
+            interstitialLoader = MultiInterstitialAdLoader(
+                context = appActivity,
+                configId = configId,
+                gamAdUnitId = adUnitId
+            )
+        }
     }
 
     private fun createRewardVideo(AD_UNIT_ID: String, CONFIG_ID: String) {
@@ -338,6 +410,7 @@ class PrebidView internal constructor(
 
     /**
      * Interstitial ad listener that, if ad is loaded, shows that ad
+     * (Legacy GAM path; unused with MultiInterstitialAdLoader but kept for reference.)
      */
     private fun interstitialListener(): AdManagerInterstitialAdLoadCallback {
         return object : AdManagerInterstitialAdLoadCallback() {
@@ -360,8 +433,16 @@ class PrebidView internal constructor(
     private fun onDestroy() {
         if (bannerAdUnit != null) {
             bannerAdUnit!!.stopAutoRefresh()
-            Log.d(Tag, "Destroying Prebid auction")
+            Log.d(Tag, "Destroying Prebid auction (banner)")
             bannerAdUnit = null
+        }
+        // NEW: destroy interstitial loader too
+        try {
+            interstitialLoader?.destroy()
+        } catch (e: Exception) {
+            Log.w(Tag, "Error destroying interstitial loader: $e")
+        } finally {
+            interstitialLoader = null
         }
     }
 

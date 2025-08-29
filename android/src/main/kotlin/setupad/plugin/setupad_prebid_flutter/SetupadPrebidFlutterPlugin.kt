@@ -20,22 +20,24 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     private lateinit var activity: Activity
     private val Tag = "PrebidPluginLog"
     private val activityFuture = CompletableFuture<Activity>()
-
+    private lateinit var channel: MethodChannel
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         //Getting Prebid account ID through method channel and initializing Prebid Mobile SDK
         try {
+            channel = MethodChannel(binding.binaryMessenger, "setupad.plugin.setupad_prebid_flutter/sdk")
             MethodChannel(
                 binding.binaryMessenger,
                 "setupad.plugin.setupad_prebid_flutter/android"
             ).setMethodCallHandler { call, result ->
                 if (call.method == "startPrebid") {
                     val arguments = call.arguments as? Map<*, *>
-                    val prebidHost = arguments?.get("host") as? String ?: ""
+                    val prebidHost = arguments?.get("prebidHost") as? String ?: ""
+                    val configHost = arguments?.get("configHost") as? String ?: ""
                     val prebidAccountID = arguments?.get("accountID") as? String ?: ""
                     val timeoutMillis = arguments?.get("timeoutMillis") as? Int ?: 0
                     val pbsDebug = arguments?.get("pbsDebug") as? Boolean ?: false
-                    initializePrebidMobile(prebidHost, prebidAccountID, timeoutMillis, pbsDebug)
+                    initializePrebidMobile(prebidHost, configHost, prebidAccountID, timeoutMillis, pbsDebug)
                 } else {
                     result.notImplemented()
                 }
@@ -82,26 +84,31 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     /**
      * Prebid Mobile SDK initialization method
      */
-    private fun initializePrebidMobile(prebidHost: String, prebidAccountID: String, timeout: Int, pbs: Boolean) {
+    private fun initializePrebidMobile(prebidHost: String, configHost: String,
+                                       prebidAccountID: String, timeout: Int, pbs: Boolean) {
+        
         activityFuture.thenAccept { activity ->
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
 
-            PrebidMobile.initializeSdk(activity, prebidHost) { status ->
+            PrebidMobile.initializeSdk(activity, prebidHost, configHost) { status ->
                 when (status) {
                     InitializationStatus.SUCCEEDED -> {
                         Log.d(Tag, "Prebid Mobile SDK initialized successfully!")
+                        channel.invokeMethod("prebidSdkInitialized", "successfully");
                     }
                     InitializationStatus.SERVER_STATUS_WARNING -> {
                         Log.e(
                             Tag,
                             "Prebid Server status checking failed: $status\n${status.description}"
                         )
+                        channel.invokeMethod("prebidSdkInitialized", "$status\n${status.description}")
                     }
                     else -> {
                         Log.e(
                             Tag,
                             "Prebid Mobile SDK initialization error: $status\n${status.description}"
                         )
+                        channel.invokeMethod("prebidSdkInitializeFailed", "$status\n${status.description}");
                     }
                 }
             }
