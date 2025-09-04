@@ -3,7 +3,7 @@
 ## 0.0.7.5
 # Added
 * Added logging for Prebid and Yango events
-* Added config URL for loading SDK priority
+* Added config URL for loading SDK priority and configuring logging
 
 ## 0.0.7.4
 # Added
