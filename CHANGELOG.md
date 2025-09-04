@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.0.7.5
+# Added
+* Added logging for Prebid and Yango events
+* Added config URL for loading SDK priority
+
+## 0.0.7.4
+# Added
+* Added SDK priority list
+
+## 0.0.7.3
+# Fixed
+* Fixed bug with changing ver com.google.guava:listenablefuture
+
 ## 0.0.7.2
 # Added
 * Added  MultiInterstitial method (waterfall with SDK priority list)
