@@ -31,7 +31,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
             ).setMethodCallHandler { call, result ->
                 if (call.method == "startPrebid") {
                     val arguments = call.arguments as? Map<*, *>
-                    val prebidHost = arguments?.get("host") as? String ?: ""
+                    val prebidHost = arguments?.get("prebidHost") as? String ?: ""
                     val configHost = arguments?.get("configHost") as? String ?: ""
                     val prebidAccountID = arguments?.get("accountID") as? String ?: ""
                     val timeoutMillis = arguments?.get("timeoutMillis") as? Int ?: 0
