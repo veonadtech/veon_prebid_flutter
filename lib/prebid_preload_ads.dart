@@ -1,11 +1,88 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:setupad_prebid_flutter/ad_type.dart';
 import 'package:setupad_prebid_flutter/event_listener.dart';
+import 'package:setupad_prebid_flutter/prebid_preload_ad_listener.dart';
+
+class PrebidPreloadAd {
+  const PrebidPreloadAd();
+  static late PrebidPreloadAdListener _preloadAdListener;
+  static const MethodChannel _pluginChannel =
+  MethodChannel('setupad.plugin.setupad_prebid_flutter/preload_ad');
+
+  // void _sendParams(MethodChannel channel) {
+  //   debugPrint("PrebidPluginLog setParams");
+  //   channel.invokeMethod('setParams', {
+  //     "adType": widget.adType.name,
+  //     "configId": widget.configId,
+  //     "adUnitId": widget.adUnitId,
+  //     "height": widget.height,
+  //     "width": widget.width,
+  //     "refreshInterval": widget.refreshInterval,
+  //   });
+  // }
+
+  ///initializeSDK() passes to the native side Prebid account ID
+  Future<void> loadAd(
+      String adType,
+      String configId,
+      String adUnitId,
+      String height,
+      int width,
+      PrebidPreloadAdListener preloadAdListener
+      ) {
+
+    _preloadAdListener = preloadAdListener;
+    _pluginChannel.setMethodCallHandler(_methodCallHandler);
+
+    if(Platform.isAndroid){
+      const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/load_ad');
+      return channel.invokeMethod('startLoadAd', {
+        "adType": adType,
+        "configId": configId,
+        "adUnitId": adUnitId,
+        "height": height,
+        "width": width
+      });
+    }else{
+      return Future.value();
+      // const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios_init');
+      // return channel.invokeMethod('startPrebid', {
+      //   "accountID": prebidAccountID,
+      //   "host": prebidHost,
+      //   "timeoutMillis": timeoutMillis,
+      //   "pbsDebug": pbsDebug
+      // });
+    }
+  }
+
+  static Future<dynamic> _methodCallHandler(MethodCall call) async {
+    switch (call.method) {
+      case "prebidAdLoaded":
+        debugPrint("PrebidSdkListener: prebidSdkInitialized ${call.arguments}");
+        _preloadAdListener.onAdLoaded(call.arguments);
+        break;
+      case "prebidAdLoadFailed":
+        debugPrint("PrebidPreloadAdListener: prebidAdLoadFailed ${call.arguments}");
+        _preloadAdListener.onAdLoadFailed(call.arguments);
+        break;
+      default:
+        debugPrint("PrebidPreloadAdListener: unknown call ${call.method}");
+    }
+  }
+
+}
+
+
+
+
 
 /// Controller to drive a single PrebidAd instance via its platform MethodChannel.
-class PrebidController {
+class PrebidPreloadController {
+
   MethodChannel? _channel;
 
   /// Internal: attached by PrebidAd when the platform view is created.
@@ -14,21 +91,6 @@ class PrebidController {
   }
 
   bool get isAttached => _channel != null;
-
-  Future<void> loadInterstitial() async {
-    if (_channel == null) return;
-    await _channel!.invokeMethod('loadInterstitial');
-  }
-
-  Future<void> showInterstitial() async {
-    if (_channel == null) return;
-    await _channel!.invokeMethod('showInterstitial');
-  }
-
-  Future<void> hideInterstitial() async {
-    if (_channel == null) return;
-    await _channel!.invokeMethod('hideInterstitial');
-  }
 
   Future<void> loadBanner() async {
     if (_channel == null) return;
@@ -40,25 +102,10 @@ class PrebidController {
     await _channel!.invokeMethod('showBanner');
   }
 
-  Future<void> pauseAuction() async {
-    if (_channel == null) return;
-    await _channel!.invokeMethod('pauseAuction');
-  }
-
-  Future<void> resumeAuction() async {
-    if (_channel == null) return;
-    await _channel!.invokeMethod('resumeAuction');
-  }
-
-  Future<void> destroyAuction() async {
-    if (_channel == null) return;
-    await _channel!.invokeMethod('destroyAuction');
-  }
 }
 
-class PrebidAd extends StatefulWidget {
-  const PrebidAd({
-    Key? key,
+class PrebidPreloadAd {
+  PrebidPreloadAd({
     required this.adType,
     required this.configId,
     required this.adUnitId,
@@ -67,22 +114,28 @@ class PrebidAd extends StatefulWidget {
     required this.refreshInterval,
     required this.eventListener,
     required this.prebidController,
-  }) : super(key: key);
+  });
 
-  final AdType adType;
-  final String configId;
-  final String adUnitId;
-  final int? width;
-  final int? height;
-  final int? refreshInterval;
-  final EventListener eventListener;
-  final PrebidController prebidController;
+  AdType adType;
+  String configId;
+  String adUnitId;
+  int? width;
+  int? height;
+  int? refreshInterval;
+  EventListener eventListener;
+  PrebidPreloadController prebidController;
 
-  @override
-  State<PrebidAd> createState() => _PrebidAdState();
+  bool get isBanner => adType == AdType.banner;
+  double get w => isBanner ? (width?.toDouble() ?? 0) : 1.0;
+  double get h => isBanner ? (height?.toDouble() ?? 0) : 1.0;
+
+  final channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel/android');
+  _wireChannel(channel);
+  _sendParams(channel);
 }
 
-class _PrebidAdState extends State<PrebidAd> {
+
+class _PrebidPreloadAdState extends State<PrebidPreloadAd> {
   MethodChannel? _channel;
 
   @override

@@ -54,11 +54,21 @@ class PrebidView internal constructor(
     private var bannerAdUnit: BannerAdUnit? = null
     private var interstitialAdUnit: InterstitialAdUnit? = null
 
+    private var bannerViewManager: BannerViewManager? = null
+
     // NEW: keep a reference to MultiInterstitialAdLoader so we can control it later
     private var interstitialLoader: MultiInterstitialAdLoader? = null
     // Keep last used IDs so "loadInterstitial" works even if called later
     private var lastInterstitialConfigId: String? = null
     private var lastInterstitialAdUnitId: String? = null
+
+    // NEW: keep a reference to BannerView so we can control it later
+    private var bannerView: BannerView? = null
+    // Keep last used IDs and size so "loadBanner" works even if called later
+    private var lastBannerConfigId: String? = null
+    private var lastBannerAdUnitId: String? = null
+    private var lastBannerWidth: Int? = null
+    private var lastBannerHeight: Int? = null
 
     private val Tag = "PrebidPluginLog"
 
@@ -79,6 +89,36 @@ class PrebidView internal constructor(
         params.gravity = Gravity.BOTTOM
     }
 
+//    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+//        //Getting Prebid account ID through method channel and initializing Prebid Mobile SDK
+//        try {
+//            channel = MethodChannel(binding.binaryMessenger, "setupad.plugin.setupad_prebid_flutter/sdk")
+//            MethodChannel(
+//                binding.binaryMessenger,
+//                "setupad.plugin.setupad_prebid_flutter/android_init"
+//            ).setMethodCallHandler { call, result ->
+//                if (call.method == "startPrebid") {
+//                    val arguments = call.arguments as? Map<*, *>
+//                    val prebidHost = arguments?.get("prebidHost") as? String ?: ""
+//                    val configHost = arguments?.get("configHost") as? String ?: ""
+//                    val prebidAccountID = arguments?.get("accountID") as? String ?: ""
+//                    val timeoutMillis = arguments?.get("timeoutMillis") as? Int ?: 0
+//                    val pbsDebug = arguments?.get("pbsDebug") as? Boolean ?: false
+//                    initializePrebidMobile(prebidHost, configHost, prebidAccountID, timeoutMillis, pbsDebug)
+//                } else {
+//                    result.notImplemented()
+//                }
+//            }
+//            binding.platformViewRegistry.registerViewFactory(
+//                "setupad.plugin.setupad_prebid_flutter",
+//                PrebidViewFactory(binding.binaryMessenger, this)
+//            )
+//        } catch (e: Exception) {
+//            Log.e(Tag, "Can't initialize Prebid Mobile SDK: ${e.message}")
+//        }
+//    }
+
+
     /**
      * Adding a view to the UI where banner will be added
      */
@@ -91,6 +131,8 @@ class PrebidView internal constructor(
      */
     override fun dispose() {
         bannerLayout = null
+        bannerViewManager?.destroy()
+        bannerViewManager = null
         channel.setMethodCallHandler(null)
         onDestroy()
     }
@@ -146,6 +188,28 @@ class PrebidView internal constructor(
                     interstitialLoader = null
                     interstitialAdUnit = null
                 }
+                result.success(null)
+            }
+            // NEW: explicit banner control from Flutter
+            "loadBanner" -> {
+                // Recreate loader if needed and load
+                if (lastBannerConfigId.isNullOrEmpty() || lastBannerAdUnitId.isNullOrEmpty()
+                    || lastBannerWidth == null || lastBannerHeight == null
+                ) {
+                    Log.w(Tag, "loadBanner called but config/adUnit/width/heilght not set yet (call setParams first).")
+                } else {
+                    ensureBannerLoader(
+                        lastBannerAdUnitId,
+                        lastBannerConfigId,
+                        lastBannerWidth,
+                        lastBannerHeight
+                    )
+                    bannerView?.loadAd()
+                }
+                result.success(null)
+            }
+            "showBanner" -> {
+                bannerLayout?.addView(bannerView)
                 result.success(null)
             }
 
@@ -230,38 +294,77 @@ class PrebidView internal constructor(
     ) {
 
         Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
-        val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
-        val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
-        adView.setAutoRefreshDelay(refreshInterval)
-        adView.setBannerListener(object : BannerViewListener {
-            override fun onAdLoaded(bannerView: BannerView?) {
-                channel.invokeMethod("onAdLoaded", CONFIG_ID);
-                Log.d(Tag, "onAdLoaded:")
-            }
 
-            override fun onAdDisplayed(bannerView: BannerView?) {
-                channel.invokeMethod("onAdDisplayed", CONFIG_ID);
-                Log.d(Tag, "onAdDisplayed:")
-            }
+        // Remember IDs and size for future explicit loads
+        lastBannerAdUnitId = AD_UNIT_ID
+        lastBannerConfigId = CONFIG_ID
+        lastBannerWidth = width
+        lastBannerHeight = height
 
-            override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
-                channel.invokeMethod("onAdFailed", exception?.message);
-                Log.d(Tag, "onAdFailed: $exception")
-            }
-
-            override fun onAdClicked(bannerView: BannerView?) {
-                channel.invokeMethod("onAdClicked", CONFIG_ID);
-                Log.d(Tag, "onAdClicked:")
-            }
+        ensureBannerLoader(
+            AD_UNIT_ID,
+            CONFIG_ID,
+            width,
+            height
+        )
+        //removed it after adding load and show methods
+//        val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
+//        val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
 
 
-            override fun onAdClosed(bannerView: BannerView?) {
-                channel.invokeMethod("onAdClosed", CONFIG_ID);
-                Log.d(Tag, "onAdClosed:")
-            }
-        })
-        adView.loadAd()
-        bannerLayout?.addView(adView)
+
+//
+//        bannerView?.setAutoRefreshDelay(refreshInterval)
+//        bannerView?.setBannerListener(object : BannerViewListener {
+//            override fun onAdLoaded(bannerView: BannerView?) {
+//                channel.invokeMethod("onAdLoaded", CONFIG_ID);
+//                Log.d(Tag, "onAdLoaded:")
+//            }
+//
+//            override fun onAdDisplayed(bannerView: BannerView?) {
+//                channel.invokeMethod("onAdDisplayed", CONFIG_ID);
+//                Log.d(Tag, "onAdDisplayed:")
+//            }
+//
+//            override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
+//                channel.invokeMethod("onAdFailed", exception?.message);
+//                Log.d(Tag, "onAdFailed: $exception")
+//            }
+//
+//            override fun onAdClicked(bannerView: BannerView?) {
+//                channel.invokeMethod("onAdClicked", CONFIG_ID);
+//                Log.d(Tag, "onAdClicked:")
+//            }
+//
+//
+//            override fun onAdClosed(bannerView: BannerView?) {
+//                channel.invokeMethod("onAdClosed", CONFIG_ID);
+//                Log.d(Tag, "onAdClosed:")
+//            }
+//        })
+//        bannerView?.loadAd()
+
+        //removed it after adding load and show methods
+     //   bannerLayout?.addView(adView)
+
+
+        // Создаем или обновляем BannerViewManager
+//        bannerViewManager = BannerViewManager.create(
+//            applicationContext,
+//            appActivity,
+//            channel,
+//            CONFIG_ID,
+//            AD_UNIT_ID,
+//            width,
+//            height,
+//            refreshInterval
+//        )
+//
+//        // Создаем BannerView
+//        bannerView = bannerViewManager?.createBanner()
+        bannerView?.loadAd()
+
+
     }
 
     /**
@@ -332,6 +435,41 @@ class PrebidView internal constructor(
                 configId = configId,
                 gamAdUnitId = adUnitId
             )
+        }
+    }
+
+    // Ensure we have a loader instance bound to these IDs; recreate if IDs changed
+    private fun ensureBannerLoader(
+        adUnitId: String,
+        configId: String,
+        width: Int,
+        height: Int,
+    ) {
+        val current = bannerView
+        if (banner == null || lastBannerAdUnitId != adUnitId || lastBannerConfigId != configId) {
+            try {
+                current?.destroy()
+            } catch (e: Exception) {
+                Log.w(Tag, "Error destroying old bannerView: $e")
+            }
+//            val eventHandler = GamBannerEventHandler(
+//                applicationContext,
+//                adUnitId,
+//                org.prebid.mobile.AdSize(width, height)
+//            )
+//            bannerView = BannerView(applicationContext, configId, eventHandler)
+
+            bannerViewManager = BannerViewManager.create(
+                applicationContext,
+                appActivity,
+                channel,
+                configId,
+                adUnitId,
+                width,
+                height,
+                refreshInterval ?: 30
+            )
+            bannerView = bannerViewManager?.createBanner()
         }
     }
 

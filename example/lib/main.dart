@@ -339,6 +339,7 @@ class _PrebidSdkListener implements PrebidSdkListener {
   onSdkInitialized(String status) {
     // TODO: implement onSdkInitialized
     debugPrint("PrebidSdkListener1: initialized $status");
+    _controller
     throw UnimplementedError();
   }
 
