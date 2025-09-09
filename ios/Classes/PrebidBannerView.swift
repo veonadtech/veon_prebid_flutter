@@ -39,6 +39,7 @@ class PrebidBannerView: NSObject {
     private enum MethodNames {
         static let setParams = "setParams"
         static let demandFetched = "demandFetched"
+        static let hideBanner = "hideBanner"
     }
 
     private enum ErrorCodes {
@@ -62,12 +63,27 @@ class PrebidBannerView: NSObject {
         }
     }
 
+    // MARK: - Deinit
+
+    deinit {
+        prebidBannerView?.delegate = nil
+        prebidBannerView = nil
+        gamBanner?.delegate = nil
+        gamBanner = nil
+        prebidInterstitial?.delegate = nil
+        prebidInterstitial = nil
+        rewardedAdUnit?.delegate = nil
+        rewardedAdUnit = nil
+    }
+
     // MARK: - Private Methods
 
     private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case MethodNames.setParams:
             handleSetParams(call, result: result)
+        case MethodNames.hideBanner:
+            handleHideBanner(result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -107,6 +123,16 @@ class PrebidBannerView: NSObject {
             return
         }
 
+        result(nil)
+    }
+
+    private func handleHideBanner(result: @escaping FlutterResult) {
+        prebidBannerView?.removeFromSuperview()
+        gamBanner?.removeFromSuperview()
+        prebidBannerView?.delegate = nil
+        prebidBannerView = nil
+        gamBanner?.delegate = nil
+        gamBanner = nil
         result(nil)
     }
 

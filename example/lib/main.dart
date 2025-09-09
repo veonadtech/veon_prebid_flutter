@@ -66,7 +66,7 @@ class _MyAppState extends State<MyAppState> {
   void initState() {
     super.initState();
 
-    _bannerEventListener = _PrebidBannerEventListener();
+    _bannerEventListener = _PrebidBannerEventListener(_controller);
     _interstitialEventListener = _PrebidInterstitialEventListener(_controller);
 
     _initializeAds();
@@ -188,6 +188,7 @@ class _MyAppState extends State<MyAppState> {
               child: const Text('clear'),
               onPressed: () {
                 setState(() {
+                  _controller.hideBanner();
                   adContainer.clear();
                 });
               },
@@ -251,6 +252,10 @@ class _MyAppState extends State<MyAppState> {
 }
 
 class _PrebidBannerEventListener implements EventListener {
+  final PrebidController _controller;
+
+  _PrebidBannerEventListener(this._controller);
+
   @override
   onAdLoaded(String configId) {
     print('AAAA Ad loaded: $configId');

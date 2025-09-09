@@ -30,6 +30,11 @@ class PrebidController {
     await _channel!.invokeMethod('hideInterstitial');
   }
 
+  Future<void> hideBanner() async {
+    if (_channel == null) return;
+    await _channel!.invokeMethod('hideBanner');
+  }
+
   Future<void> pauseAuction() async {
     if (_channel == null) return;
     await _channel!.invokeMethod('pauseAuction');
