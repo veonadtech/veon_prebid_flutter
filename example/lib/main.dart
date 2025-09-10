@@ -189,6 +189,7 @@ class _MyAppState extends State<MyAppState> {
               onPressed: () {
                 setState(() {
                   _controller.hideBanner();
+                  adContainer.clear();
                 });
               },
             ),

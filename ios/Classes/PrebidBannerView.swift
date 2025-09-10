@@ -24,6 +24,7 @@ class PrebidBannerView: NSObject {
     // Prebid reward ad unit
     private var rewardedAdUnit: RewardedAdUnit?
 
+    private var adParams: AdParameters?
     private var adSize: CGSize?
     private var configId: String?
     private var refreshInterval: Double?
@@ -39,6 +40,8 @@ class PrebidBannerView: NSObject {
     private enum MethodNames {
         static let setParams = "setParams"
         static let demandFetched = "demandFetched"
+        static let loadBanner = "loadBanner"
+        static let showBanner = "showBanner"
         static let hideBanner = "hideBanner"
     }
 
@@ -74,6 +77,7 @@ class PrebidBannerView: NSObject {
         prebidInterstitial = nil
         rewardedAdUnit?.delegate = nil
         rewardedAdUnit = nil
+        adParams = nil
     }
 
     // MARK: - Private Methods
@@ -82,6 +86,10 @@ class PrebidBannerView: NSObject {
         switch call.method {
         case MethodNames.setParams:
             handleSetParams(call, result: result)
+        case MethodNames.loadBanner:
+            handleLoadBanner(result: result)
+        case MethodNames.showBanner:
+            handleShowBanner(result: result)
         case MethodNames.hideBanner:
             handleHideBanner(result: result)
         default:
@@ -101,7 +109,8 @@ class PrebidBannerView: NSObject {
             return
         }
 
-        let adParams = AdParameters(from: arguments)
+        adParams = AdParameters(from: arguments)
+        guard let adParams else { return }
         logAdParameters(adParams)
         configId = adParams.configId
 
@@ -123,6 +132,24 @@ class PrebidBannerView: NSObject {
             return
         }
 
+        result(nil)
+    }
+    
+    private func handleLoadBanner(result: @escaping FlutterResult) {
+        guard let adParams else {
+            return result(nil)
+        }
+        loadGamBanner(params: adParams)
+        result(nil)
+    }
+    
+    private func handleShowBanner(result: @escaping FlutterResult) {
+        if let gamBanner {
+            addGamBannerViewToView(gamBanner)
+        }
+        if let prebidBannerView {
+            addPrebidBannerViewToView(prebidBannerView)
+        }
         result(nil)
     }
 
@@ -156,6 +183,7 @@ class PrebidBannerView: NSObject {
             print("Error: adSize or configId is nil")
             return
         }
+        guard gamBanner == nil else { return }
         
         let adUnit = BannerAdUnit(configId: configId, size: adSize)
         
@@ -182,7 +210,9 @@ class PrebidBannerView: NSObject {
     }
 
     private func loadPrebidBanner() {
-        guard let adSize, let configId else { return }
+        guard prebidBannerView == nil, let adSize, let configId else {
+            return
+        }
         
         prebidBannerView = BannerView(frame: CGRect(origin: .zero, size: adSize),
                                       configID: configId,
@@ -309,7 +339,6 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
         NSLog("LOG: Prebid banner loaded successfully")
         let configId = bannerView.configID
         channel.invokeMethod("onAdLoaded", arguments: configId)
-        addPrebidBannerViewToView(bannerView)
     }
 
     func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
@@ -381,9 +410,6 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
 extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
     
     func bannerViewDidReceiveAd(_ bannerView: GoogleMobileAds.BannerView) {
-        if let gamBanner {
-            addGamBannerViewToView(gamBanner)
-        }
         self.channel.invokeMethod("onAdLoaded", arguments: bannerView.adUnitID)
     }
     
