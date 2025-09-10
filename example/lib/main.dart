@@ -189,7 +189,14 @@ class _MyAppState extends State<MyAppState> {
               onPressed: () {
                 setState(() {
                   _controller.hideBanner();
-                  adContainer.clear();
+                });
+              },
+            ),
+            ElevatedButton(
+              child: const Text('load Banner'),
+              onPressed: () {
+                setState(() {
+                  _controller.loadBanner();
                 });
               },
             ),

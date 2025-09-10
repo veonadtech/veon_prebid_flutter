@@ -65,6 +65,7 @@ class PrebidView internal constructor(
     private var lastBannerAdUnitId: String? = null
     private var lastBannerWidth: Int? = null
     private var lastBannerHeight: Int? = null
+    private var lastRefreshInterval: Int? = null
 
     private val Tag = "PrebidPluginLog"
 
@@ -156,11 +157,11 @@ class PrebidView internal constructor(
             }
             // NEW: explicit banner control from Flutter
             "loadBanner" -> {
-                // Recreate loader if needed and load
                 val adUnitId = lastBannerAdUnitId
                 val configId = lastBannerConfigId
                 val width = lastBannerWidth
                 val height = lastBannerHeight
+                val refreshInterval = lastRefreshInterval
 
                 // Recreate loader if needed and load
                 if (configId.isNullOrEmpty() || adUnitId.isNullOrEmpty()
@@ -172,9 +173,9 @@ class PrebidView internal constructor(
                         adUnitId,
                         configId,
                         width,
-                        height
+                        height,
+                        refreshInterval
                     )
-                    bannerView?.loadAd()
                 }
                 result.success(null)
             }
@@ -185,6 +186,7 @@ class PrebidView internal constructor(
             "hideBanner" -> {
                 // There is no "hide" for a shown banner; destroy to ensure it won't show again.
                 try {
+                    bannerLayout?.removeView(bannerView)
                     bannerView?.destroy()
                 } catch (e: Exception) {
                     Log.w(Tag, "Error destroying bannerView: $e")
@@ -281,41 +283,15 @@ class PrebidView internal constructor(
         lastBannerConfigId = CONFIG_ID
         lastBannerWidth = width
         lastBannerHeight = height
+        lastRefreshInterval = refreshInterval
 
         ensureBannerLoader(
             AD_UNIT_ID,
             CONFIG_ID,
             width,
-            height
+            height,
+            refreshInterval
         )
-        bannerView?.setAutoRefreshDelay(refreshInterval)
-        bannerView?.setBannerListener(object : BannerViewListener {
-            override fun onAdLoaded(bannerView: BannerView?) {
-                channel.invokeMethod("onAdLoaded", CONFIG_ID);
-                Log.d(Tag, "onAdLoaded:")
-            }
-
-            override fun onAdDisplayed(bannerView: BannerView?) {
-                channel.invokeMethod("onAdDisplayed", CONFIG_ID);
-                Log.d(Tag, "onAdDisplayed:")
-            }
-
-            override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
-                channel.invokeMethod("onAdFailed", exception?.message);
-                Log.d(Tag, "onAdFailed: $exception")
-            }
-
-            override fun onAdClicked(bannerView: BannerView?) {
-                channel.invokeMethod("onAdClicked", CONFIG_ID);
-                Log.d(Tag, "onAdClicked:")
-            }
-
-            override fun onAdClosed(bannerView: BannerView?) {
-                channel.invokeMethod("onAdClosed", CONFIG_ID);
-                Log.d(Tag, "onAdClosed:")
-            }
-        })
-        bannerView?.loadAd()
     }
 
     /**
@@ -395,20 +371,52 @@ class PrebidView internal constructor(
         configId: String,
         width: Int,
         height: Int,
+        refreshInterval: Int?
     ) {
+        val refresh = refreshInterval ?: 30
         val current = bannerView
         if (current == null || lastBannerAdUnitId != adUnitId || lastBannerConfigId != configId) {
             try {
                 current?.destroy()
+                val eventHandler = GamBannerEventHandler(
+                    applicationContext,
+                    adUnitId,
+                    org.prebid.mobile.AdSize(width, height)
+                )
+                bannerView = BannerView(applicationContext, configId, eventHandler)
+
+                bannerView?.setAutoRefreshDelay(refresh)
+                bannerView?.setBannerListener(object : BannerViewListener {
+                    override fun onAdLoaded(bannerView: BannerView?) {
+                        channel.invokeMethod("onAdLoaded", configId);
+                        Log.d(Tag, "onAdLoaded:")
+                    }
+
+                    override fun onAdDisplayed(bannerView: BannerView?) {
+                        channel.invokeMethod("onAdDisplayed", configId);
+                        Log.d(Tag, "onAdDisplayed:")
+                    }
+
+                    override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
+                        channel.invokeMethod("onAdFailed", exception?.message);
+                        Log.d(Tag, "onAdFailed: $exception")
+                    }
+
+                    override fun onAdClicked(bannerView: BannerView?) {
+                        channel.invokeMethod("onAdClicked", configId);
+                        Log.d(Tag, "onAdClicked:")
+                    }
+
+                    override fun onAdClosed(bannerView: BannerView?) {
+                        channel.invokeMethod("onAdClosed", configId);
+                        Log.d(Tag, "onAdClosed:")
+                    }
+                })
+
+                bannerView?.loadAd()
             } catch (e: Exception) {
                 Log.w(Tag, "Error destroying old bannerView: $e")
             }
-            val eventHandler = GamBannerEventHandler(
-                applicationContext,
-                adUnitId,
-                org.prebid.mobile.AdSize(width, height)
-            )
-            bannerView = BannerView(applicationContext, configId, eventHandler)
         }
     }
 
@@ -528,7 +536,7 @@ class PrebidView internal constructor(
      */
     private fun onPause() {
         if (bannerView != null) {
-            bannerView!!.stopAutoRefresh()
+            bannerView!!.stopRefresh()
             Log.d(Tag, "Pausing Prebid auction")
         }
     }
@@ -539,7 +547,7 @@ class PrebidView internal constructor(
     private fun onResume() {
         if (bannerView != null) {
             Log.d(Tag, "Resuming Prebid auction")
-            bannerView!!.resumeAutoRefresh()
+            bannerView!!.setAutoRefreshDelay(lastRefreshInterval ?: 30)
         }
     }
 }
