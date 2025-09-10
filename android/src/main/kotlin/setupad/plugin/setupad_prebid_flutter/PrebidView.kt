@@ -182,6 +182,18 @@ class PrebidView internal constructor(
                 bannerLayout?.addView(bannerView)
                 result.success(null)
             }
+            "hideBanner" -> {
+                // There is no "hide" for a shown banner; destroy to ensure it won't show again.
+                try {
+                    bannerView?.destroy()
+                } catch (e: Exception) {
+                    Log.w(Tag, "Error destroying bannerView: $e")
+                } finally {
+                    bannerView = null
+                }
+                result.success(null)
+            }
+
             else -> result.notImplemented()
         }
     }
@@ -496,10 +508,10 @@ class PrebidView internal constructor(
      * banner from the layout
      */
     private fun onDestroy() {
-        if (bannerAdUnit != null) {
+        if (bannerView != null) {
             bannerAdUnit!!.stopAutoRefresh()
             Log.d(Tag, "Destroying Prebid auction (banner)")
-            bannerAdUnit = null
+            bannerView = null
         }
         // NEW: destroy interstitial loader too
         try {
@@ -515,8 +527,8 @@ class PrebidView internal constructor(
      * A method for pausing auction
      */
     private fun onPause() {
-        if (bannerAdUnit != null) {
-            bannerAdUnit!!.stopAutoRefresh()
+        if (bannerView != null) {
+            bannerView!!.stopAutoRefresh()
             Log.d(Tag, "Pausing Prebid auction")
         }
     }
@@ -525,9 +537,9 @@ class PrebidView internal constructor(
      * A method for resuming auction
      */
     private fun onResume() {
-        if (bannerAdUnit != null) {
+        if (bannerView != null) {
             Log.d(Tag, "Resuming Prebid auction")
-            bannerAdUnit!!.resumeAutoRefresh()
+            bannerView!!.resumeAutoRefresh()
         }
     }
 }
