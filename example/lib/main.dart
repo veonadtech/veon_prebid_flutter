@@ -259,6 +259,7 @@ class _PrebidBannerEventListener implements EventListener {
   @override
   onAdLoaded(String configId) {
     print('AAAA Ad loaded: $configId');
+    _controller.showBanner();
     // Your logic
   }
 

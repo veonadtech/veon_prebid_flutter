@@ -29,10 +29,8 @@ import org.prebid.mobile.api.rendering.BannerView
 import org.prebid.mobile.api.rendering.InterstitialAdUnit
 import org.prebid.mobile.api.rendering.RewardedAdUnit
 import org.prebid.mobile.api.rendering.listeners.BannerViewListener
-import org.prebid.mobile.api.rendering.listeners.InterstitialAdUnitListener
 import org.prebid.mobile.api.rendering.listeners.RewardedAdUnitListener
 import org.prebid.mobile.eventhandlers.GamBannerEventHandler
-import org.prebid.mobile.eventhandlers.GamInterstitialEventHandler
 import org.prebid.mobile.eventhandlers.GamRewardedEventHandler
 import org.prebid.mobile.rendering.interstitial.rewarded.Reward
 
@@ -59,6 +57,14 @@ class PrebidView internal constructor(
     // Keep last used IDs so "loadInterstitial" works even if called later
     private var lastInterstitialConfigId: String? = null
     private var lastInterstitialAdUnitId: String? = null
+
+    // NEW: keep a reference to BannerView so we can control it later
+    private var bannerView: BannerView? = null
+    // Keep last used IDs and size so "loadBanner" works even if called later
+    private var lastBannerConfigId: String? = null
+    private var lastBannerAdUnitId: String? = null
+    private var lastBannerWidth: Int? = null
+    private var lastBannerHeight: Int? = null
 
     private val Tag = "PrebidPluginLog"
 
@@ -148,7 +154,34 @@ class PrebidView internal constructor(
                 }
                 result.success(null)
             }
+            // NEW: explicit banner control from Flutter
+            "loadBanner" -> {
+                // Recreate loader if needed and load
+                val adUnitId = lastBannerAdUnitId
+                val configId = lastBannerConfigId
+                val width = lastBannerWidth
+                val height = lastBannerHeight
 
+                // Recreate loader if needed and load
+                if (configId.isNullOrEmpty() || adUnitId.isNullOrEmpty()
+                    || width == null || height == null
+                ) {
+                    Log.w(Tag, "loadBanner called but config/adUnit/width/height not set yet (call setParams first).")
+                } else {
+                    ensureBannerLoader(
+                        adUnitId,
+                        configId,
+                        width,
+                        height
+                    )
+                    bannerView?.loadAd()
+                }
+                result.success(null)
+            }
+            "showBanner" -> {
+                bannerLayout?.addView(bannerView)
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
     }
@@ -230,10 +263,21 @@ class PrebidView internal constructor(
     ) {
 
         Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
-        val eventHandler = GamBannerEventHandler(applicationContext, AD_UNIT_ID, org.prebid.mobile.AdSize(width, height))
-        val adView = BannerView(applicationContext, CONFIG_ID, eventHandler)
-        adView.setAutoRefreshDelay(refreshInterval)
-        adView.setBannerListener(object : BannerViewListener {
+
+        // Remember IDs and size for future explicit loads
+        lastBannerAdUnitId = AD_UNIT_ID
+        lastBannerConfigId = CONFIG_ID
+        lastBannerWidth = width
+        lastBannerHeight = height
+
+        ensureBannerLoader(
+            AD_UNIT_ID,
+            CONFIG_ID,
+            width,
+            height
+        )
+        bannerView?.setAutoRefreshDelay(refreshInterval)
+        bannerView?.setBannerListener(object : BannerViewListener {
             override fun onAdLoaded(bannerView: BannerView?) {
                 channel.invokeMethod("onAdLoaded", CONFIG_ID);
                 Log.d(Tag, "onAdLoaded:")
@@ -254,14 +298,12 @@ class PrebidView internal constructor(
                 Log.d(Tag, "onAdClicked:")
             }
 
-
             override fun onAdClosed(bannerView: BannerView?) {
                 channel.invokeMethod("onAdClosed", CONFIG_ID);
                 Log.d(Tag, "onAdClosed:")
             }
         })
-        adView.loadAd()
-        bannerLayout?.addView(adView)
+        bannerView?.loadAd()
     }
 
     /**
@@ -332,6 +374,29 @@ class PrebidView internal constructor(
                 configId = configId,
                 gamAdUnitId = adUnitId
             )
+        }
+    }
+
+    // Ensure we have a loader instance bound to these IDs; recreate if IDs changed
+    private fun ensureBannerLoader(
+        adUnitId: String,
+        configId: String,
+        width: Int,
+        height: Int,
+    ) {
+        val current = bannerView
+        if (current == null || lastBannerAdUnitId != adUnitId || lastBannerConfigId != configId) {
+            try {
+                current?.destroy()
+            } catch (e: Exception) {
+                Log.w(Tag, "Error destroying old bannerView: $e")
+            }
+            val eventHandler = GamBannerEventHandler(
+                applicationContext,
+                adUnitId,
+                org.prebid.mobile.AdSize(width, height)
+            )
+            bannerView = BannerView(applicationContext, configId, eventHandler)
         }
     }
 

@@ -24,7 +24,7 @@ class PrebidMobile {
     _pluginChannel.setMethodCallHandler(_methodCallHandler);
 
     if(Platform.isAndroid){
-      const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/android');
+      const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/android_init');
       return channel.invokeMethod('startPrebid', {
         "prebidHost": prebidHost,
         "configHost": configHost,
