@@ -311,7 +311,7 @@ class _PrebidInterstitialEventListener implements EventListener {
   onAdLoaded(String configId) {
     print('AAAA Ad loaded: $configId');
     _controller.showInterstitial();
-    Future.delayed(const Duration(seconds: 3), _controller.hideInterstitial);
+    //Future.delayed(const Duration(seconds: 3), _controller.hideInterstitial);
     // Your logic
   }
 

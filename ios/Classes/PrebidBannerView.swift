@@ -43,6 +43,9 @@ class PrebidBannerView: NSObject {
         static let loadBanner = "loadBanner"
         static let showBanner = "showBanner"
         static let hideBanner = "hideBanner"
+        static let loadInterstitial = "loadInterstitial"
+        static let showInterstitial = "showInterstitial"
+        static let hideInterstitial = "hideInterstitial"
     }
 
     private enum ErrorCodes {
@@ -92,6 +95,12 @@ class PrebidBannerView: NSObject {
             handleShowBanner(result: result)
         case MethodNames.hideBanner:
             handleHideBanner(result: result)
+        case MethodNames.loadInterstitial:
+            handleLoadInterstitial(result: result)
+        case MethodNames.showInterstitial:
+            handleShowInterstitial(result: result)
+        case MethodNames.hideInterstitial:
+            handleHideInterstitial(result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -106,6 +115,7 @@ class PrebidBannerView: NSObject {
                     details: nil
                 )
             )
+            
             return
         }
 
@@ -150,6 +160,7 @@ class PrebidBannerView: NSObject {
         if let prebidBannerView {
             addPrebidBannerViewToView(prebidBannerView)
         }
+        
         result(nil)
     }
 
@@ -160,6 +171,32 @@ class PrebidBannerView: NSObject {
         prebidBannerView = nil
         gamBanner?.delegate = nil
         gamBanner = nil
+        
+        result(nil)
+    }
+    
+    private func handleLoadInterstitial(result: @escaping FlutterResult) {
+        guard let adParams else {
+            return result(nil)
+        }
+        loadInterstitialRendering(params: adParams)
+        result(nil)
+    }
+    
+    private func handleShowInterstitial(result: @escaping FlutterResult) {
+        if let prebidInterstitial {
+            let rootViewController = getRootViewController()
+            let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
+            prebidInterstitial.show(from: controllerToPresent)
+        }
+        
+        result(nil)
+    }
+    
+    private func handleHideInterstitial(result: @escaping FlutterResult) {
+        prebidInterstitial?.delegate = nil
+        prebidInterstitial = nil
+        
         result(nil)
     }
 
@@ -294,10 +331,6 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
     func interstitialDidReceiveAd(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: Prebid interstitial has been loaded, we're showing it...")
         channel.invokeMethod("onAdLoaded", arguments: configId)
-
-        let rootViewController = getRootViewController()
-        let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
-        interstitial.show(from: controllerToPresent)
     }
 
     func interstitial(_ interstitial: InterstitialRenderingAdUnit, didFailToReceiveAdWithError error: Error?) {
