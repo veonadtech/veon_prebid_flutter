@@ -1,9 +1,19 @@
 # CHANGELOG
 
+## 0.0.7.3
+# Added
+* Added low/show/hide methods for Banner
+
+# Changed
+* The banner/interstitial does not refresh when displayed again if it was previously loaded successfully
+* ExoPlayer migrated to Media3
+* targetSdkVersion upgraded to 35
+
 ## 0.0.7.2
 # Added
 * Added  MultiInterstitial method (waterfall with SDK priority list)
-* Added show/hide methods for Interstitial
+* Added low/show/hide methods for Interstitial
+* Added the config URL to the SDK initialization method to set the SDK priority and manage logging
 
 # Fixed
 * Fixed bug with changing ver com.google.guava:listenablefuture
