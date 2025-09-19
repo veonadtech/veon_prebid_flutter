@@ -18,7 +18,7 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject {
             return
         }
         
-        let serverHost = arguments["host"] as? String ?? ""
+        let serverHost = arguments["prebidHost"] as? String ?? ""
         let accountId = arguments["accountID"] as? String ?? ""
         let timeoutMills = arguments["timeoutMillis"] as? Int ?? 30000
         

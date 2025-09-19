@@ -86,7 +86,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
      */
     private fun initializePrebidMobile(prebidHost: String, configHost: String,
                                        prebidAccountID: String, timeout: Int, pbs: Boolean) {
-        
+
         activityFuture.thenAccept { activity ->
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
 
@@ -96,6 +96,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                         Log.d(Tag, "Prebid Mobile SDK initialized successfully!")
                         channel.invokeMethod("prebidSdkInitialized", "successfully");
                     }
+
                     InitializationStatus.SERVER_STATUS_WARNING -> {
                         Log.e(
                             Tag,
@@ -103,6 +104,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                         )
                         channel.invokeMethod("prebidSdkInitialized", "$status\n${status.description}")
                     }
+
                     else -> {
                         Log.e(
                             Tag,

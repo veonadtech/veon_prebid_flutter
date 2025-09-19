@@ -64,7 +64,7 @@ class _MyAppState extends State<MyAppState> {
 
   @override
   void initState() {
-    super.initState();
+  super.initState();
 
     _bannerEventListener = _PrebidBannerEventListener(_controller);
     _interstitialEventListener = _PrebidInterstitialEventListener(_controller);
@@ -175,6 +175,7 @@ class _MyAppState extends State<MyAppState> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
