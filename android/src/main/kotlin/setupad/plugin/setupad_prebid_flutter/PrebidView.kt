@@ -517,7 +517,6 @@ class PrebidView internal constructor(
      */
     private fun onDestroy() {
         if (bannerView != null) {
-            bannerAdUnit!!.stopAutoRefresh()
             Log.d(Tag, "Destroying Prebid auction (banner)")
             bannerView = null
         }
