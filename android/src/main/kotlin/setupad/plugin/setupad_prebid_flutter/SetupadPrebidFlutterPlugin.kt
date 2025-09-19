@@ -20,14 +20,15 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     private lateinit var activity: Activity
     private val Tag = "PrebidPluginLog"
     private val activityFuture = CompletableFuture<Activity>()
-
+    private lateinit var channel: MethodChannel
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         //Getting Prebid account ID through method channel and initializing Prebid Mobile SDK
         try {
+            channel = MethodChannel(binding.binaryMessenger, "setupad.plugin.setupad_prebid_flutter/sdk")
             MethodChannel(
                 binding.binaryMessenger,
-                "setupad.plugin.setupad_prebid_flutter/android"
+                "setupad.plugin.setupad_prebid_flutter/android_init"
             ).setMethodCallHandler { call, result ->
                 if (call.method == "startPrebid") {
                     val arguments = call.arguments as? Map<*, *>
@@ -83,7 +84,9 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     /**
      * Prebid Mobile SDK initialization method
      */
-    private fun initializePrebidMobile(prebidHost: String, configHost: String, prebidAccountID: String, timeout: Int, pbs: Boolean) {
+    private fun initializePrebidMobile(prebidHost: String, configHost: String,
+                                       prebidAccountID: String, timeout: Int, pbs: Boolean) {
+
         activityFuture.thenAccept { activity ->
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
 
@@ -91,6 +94,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                 when (status) {
                     InitializationStatus.SUCCEEDED -> {
                         Log.d(Tag, "Prebid Mobile SDK initialized successfully!")
+                        channel.invokeMethod("prebidSdkInitialized", "successfully");
                     }
 
                     InitializationStatus.SERVER_STATUS_WARNING -> {
@@ -98,6 +102,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                             Tag,
                             "Prebid Server status checking failed: $status\n${status.description}"
                         )
+                        channel.invokeMethod("prebidSdkInitialized", "$status\n${status.description}")
                     }
 
                     else -> {
@@ -105,6 +110,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                             Tag,
                             "Prebid Mobile SDK initialization error: $status\n${status.description}"
                         )
+                        channel.invokeMethod("prebidSdkInitializeFailed", "$status\n${status.description}");
                     }
                 }
             }

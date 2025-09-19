@@ -24,6 +24,7 @@ class PrebidBannerView: NSObject {
     // Prebid reward ad unit
     private var rewardedAdUnit: RewardedAdUnit?
 
+    private var adParams: AdParameters?
     private var adSize: CGSize?
     private var configId: String?
     private var refreshInterval: Double?
@@ -39,6 +40,12 @@ class PrebidBannerView: NSObject {
     private enum MethodNames {
         static let setParams = "setParams"
         static let demandFetched = "demandFetched"
+        static let loadBanner = "loadBanner"
+        static let showBanner = "showBanner"
+        static let hideBanner = "hideBanner"
+        static let loadInterstitial = "loadInterstitial"
+        static let showInterstitial = "showInterstitial"
+        static let hideInterstitial = "hideInterstitial"
     }
 
     private enum ErrorCodes {
@@ -62,12 +69,38 @@ class PrebidBannerView: NSObject {
         }
     }
 
+    // MARK: - Deinit
+
+    deinit {
+        prebidBannerView?.delegate = nil
+        prebidBannerView = nil
+        gamBanner?.delegate = nil
+        gamBanner = nil
+        prebidInterstitial?.delegate = nil
+        prebidInterstitial = nil
+        rewardedAdUnit?.delegate = nil
+        rewardedAdUnit = nil
+        adParams = nil
+    }
+
     // MARK: - Private Methods
 
     private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case MethodNames.setParams:
             handleSetParams(call, result: result)
+        case MethodNames.loadBanner:
+            handleLoadBanner(result: result)
+        case MethodNames.showBanner:
+            handleShowBanner(result: result)
+        case MethodNames.hideBanner:
+            handleHideBanner(result: result)
+        case MethodNames.loadInterstitial:
+            handleLoadInterstitial(result: result)
+        case MethodNames.showInterstitial:
+            handleShowInterstitial(result: result)
+        case MethodNames.hideInterstitial:
+            handleHideInterstitial(result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -82,10 +115,12 @@ class PrebidBannerView: NSObject {
                     details: nil
                 )
             )
+            
             return
         }
 
-        let adParams = AdParameters(from: arguments)
+        adParams = AdParameters(from: arguments)
+        guard let adParams else { return }
         logAdParameters(adParams)
         configId = adParams.configId
 
@@ -109,6 +144,61 @@ class PrebidBannerView: NSObject {
 
         result(nil)
     }
+    
+    private func handleLoadBanner(result: @escaping FlutterResult) {
+        guard let adParams else {
+            return result(nil)
+        }
+        loadGamBanner(params: adParams)
+        result(nil)
+    }
+    
+    private func handleShowBanner(result: @escaping FlutterResult) {
+        if let gamBanner {
+            addGamBannerViewToView(gamBanner)
+        }
+        if let prebidBannerView {
+            addPrebidBannerViewToView(prebidBannerView)
+        }
+        
+        result(nil)
+    }
+
+    private func handleHideBanner(result: @escaping FlutterResult) {
+        prebidBannerView?.removeFromSuperview()
+        gamBanner?.removeFromSuperview()
+        prebidBannerView?.delegate = nil
+        prebidBannerView = nil
+        gamBanner?.delegate = nil
+        gamBanner = nil
+        
+        result(nil)
+    }
+    
+    private func handleLoadInterstitial(result: @escaping FlutterResult) {
+        guard let adParams else {
+            return result(nil)
+        }
+        loadInterstitialRendering(params: adParams)
+        result(nil)
+    }
+    
+    private func handleShowInterstitial(result: @escaping FlutterResult) {
+        if let prebidInterstitial {
+            let rootViewController = getRootViewController()
+            let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
+            prebidInterstitial.show(from: controllerToPresent)
+        }
+        
+        result(nil)
+    }
+    
+    private func handleHideInterstitial(result: @escaping FlutterResult) {
+        prebidInterstitial?.delegate = nil
+        prebidInterstitial = nil
+        
+        result(nil)
+    }
 
     // MARK: - Logging
 
@@ -130,6 +220,7 @@ class PrebidBannerView: NSObject {
             print("Error: adSize or configId is nil")
             return
         }
+        guard gamBanner == nil else { return }
         
         let adUnit = BannerAdUnit(configId: configId, size: adSize)
         
@@ -156,7 +247,9 @@ class PrebidBannerView: NSObject {
     }
 
     private func loadPrebidBanner() {
-        guard let adSize, let configId else { return }
+        guard prebidBannerView == nil, let adSize, let configId else {
+            return
+        }
         
         prebidBannerView = BannerView(frame: CGRect(origin: .zero, size: adSize),
                                       configID: configId,
@@ -238,10 +331,6 @@ extension PrebidBannerView: InterstitialAdUnitDelegate {
     func interstitialDidReceiveAd(_ interstitial: InterstitialRenderingAdUnit) {
         NSLog("LOG: Prebid interstitial has been loaded, we're showing it...")
         channel.invokeMethod("onAdLoaded", arguments: configId)
-
-        let rootViewController = getRootViewController()
-        let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
-        interstitial.show(from: controllerToPresent)
     }
 
     func interstitial(_ interstitial: InterstitialRenderingAdUnit, didFailToReceiveAdWithError error: Error?) {
@@ -283,7 +372,6 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
         NSLog("LOG: Prebid banner loaded successfully")
         let configId = bannerView.configID
         channel.invokeMethod("onAdLoaded", arguments: configId)
-        addPrebidBannerViewToView(bannerView)
     }
 
     func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
@@ -355,9 +443,6 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
 extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
     
     func bannerViewDidReceiveAd(_ bannerView: GoogleMobileAds.BannerView) {
-        if let gamBanner {
-            addGamBannerViewToView(gamBanner)
-        }
         self.channel.invokeMethod("onAdLoaded", arguments: bannerView.adUnitID)
     }
     

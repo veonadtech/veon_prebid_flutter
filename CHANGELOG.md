@@ -1,21 +1,26 @@
 # CHANGELOG
 
-## 0.0.7.5
-# Added
-* Added logging for Prebid and Yango events
-* Added config URL for loading SDK priority and configuring logging
-
-## 0.0.7.4
-# Added
-* Added SDK priority list
-
 ## 0.0.7.3
-# Fixed
-* Fixed bug with changing ver com.google.guava:listenablefuture
+# Added
+* Added low/show/hide methods for Banner
+
+# Changed
+* The banner/interstitial does not refresh when displayed again if it was previously loaded successfully
+* ExoPlayer migrated to Media3
+* targetSdkVersion upgraded to 35
 
 ## 0.0.7.2
 # Added
 * Added  MultiInterstitial method (waterfall with SDK priority list)
+* Added low/show/hide methods for Interstitial
+* Added the config URL to the SDK initialization method to set the SDK priority and manage logging
+
+# Fixed
+* Fixed bug with changing ver com.google.guava:listenablefuture
+
+## 0.0.7.1
+# Fixed
+* Fixed bug with the ad is not shown in iOS. 
 
 ## 0.0.7
 # Changed
