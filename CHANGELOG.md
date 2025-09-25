@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.0.7.4
+# Fixed
+* Fixed bug with SDK Log
+* Fixed bug with Guava
+* Fixed bug with Listenable Future
+
 ## 0.0.7.3
 # Added
 * Added low/show/hide methods for Banner
