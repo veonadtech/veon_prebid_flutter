@@ -10,14 +10,14 @@ PODS:
   - setupad_prebid_flutter (0.0.1):
     - Flutter
     - Google-Mobile-Ads-SDK (= 12.3.0)
-    - VeonPrebidMobile (= 0.0.4)
-    - VeonPrebidMobileGAMEventHandlers (= 0.0.4)
-  - VeonPrebidMobile (0.0.4):
-    - VeonPrebidMobile/core (= 0.0.4)
-  - VeonPrebidMobile/core (0.0.4)
-  - VeonPrebidMobileGAMEventHandlers (0.0.4):
+    - VeonPrebidMobile (= 0.0.3)
+    - VeonPrebidMobileGAMEventHandlers (= 0.0.3)
+  - VeonPrebidMobile (0.0.3):
+    - VeonPrebidMobile/core (= 0.0.3)
+  - VeonPrebidMobile/core (0.0.3)
+  - VeonPrebidMobileGAMEventHandlers (0.0.3):
     - Google-Mobile-Ads-SDK (>= 12.0.0)
-    - VeonPrebidMobile (= 0.0.4)
+    - VeonPrebidMobile (= 0.0.3)
 
 DEPENDENCIES:
   - app_tracking_transparency (from `.symlinks/plugins/app_tracking_transparency/ios`)
