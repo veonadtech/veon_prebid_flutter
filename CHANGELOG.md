@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.0.7.5
+# Changed
+* iOS version updated to 0.0.4
+
 ## 0.0.7.4
 # Fixed
 * Fixed bug with SDK Log
