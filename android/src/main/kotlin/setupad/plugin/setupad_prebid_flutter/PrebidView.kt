@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.google.android.gms.ads.AdListener
-import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAd
@@ -18,19 +17,18 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
-import org.prebid.mobile.BannerAdUnit
 import org.prebid.mobile.addendum.AdViewUtils
 import org.prebid.mobile.addendum.PbFindSizeError
+import org.prebid.mobile.AdSize
 import org.prebid.mobile.api.data.SdkType
 import org.prebid.mobile.api.exceptions.AdException
+import org.prebid.mobile.api.multiadloader.MultiBannerLoader
 import org.prebid.mobile.api.multiadloader.MultiInterstitialAdLoader
+import org.prebid.mobile.api.multiadloader.listeners.MultiBannerViewListener
 import org.prebid.mobile.api.multiadloader.listeners.MultiInterstitialAdListener
 import org.prebid.mobile.api.rendering.BannerView
-import org.prebid.mobile.api.rendering.InterstitialAdUnit
 import org.prebid.mobile.api.rendering.RewardedAdUnit
-import org.prebid.mobile.api.rendering.listeners.BannerViewListener
 import org.prebid.mobile.api.rendering.listeners.RewardedAdUnitListener
-import org.prebid.mobile.eventhandlers.GamBannerEventHandler
 import org.prebid.mobile.eventhandlers.GamRewardedEventHandler
 import org.prebid.mobile.rendering.interstitial.rewarded.Reward
 
@@ -49,9 +47,6 @@ class PrebidView internal constructor(
     private val channel = MethodChannel(messenger, "setupad.plugin.setupad_prebid_flutter/myChannel_$id")
     private var bannerLayout: ViewGroup?
 
-    private var bannerAdUnit: BannerAdUnit? = null
-    private var interstitialAdUnit: InterstitialAdUnit? = null
-
     // NEW: keep a reference to MultiInterstitialAdLoader so we can control it later
     private var interstitialLoader: MultiInterstitialAdLoader? = null
     // Keep last used IDs so "loadInterstitial" works even if called later
@@ -60,6 +55,9 @@ class PrebidView internal constructor(
 
     // NEW: keep a reference to BannerView so we can control it later
     private var bannerView: BannerView? = null
+    private var bannerLoader: MultiBannerLoader? = null
+    private var adView: View? = null
+
     // Keep last used IDs and size so "loadBanner" works even if called later
     private var lastBannerConfigId: String? = null
     private var lastBannerAdUnitId: String? = null
@@ -143,16 +141,7 @@ class PrebidView internal constructor(
             }
             "hideInterstitial" -> {
                 // There is no "hide" for a shown interstitial; destroy to ensure it won't show again.
-                try {
-                    interstitialLoader?.destroy()
-                    interstitialAdUnit?.destroy()
-
-                } catch (e: Exception) {
-                    Log.w(Tag, "Error destroying interstitial loader: $e")
-                } finally {
-                    interstitialLoader = null
-                    interstitialAdUnit = null
-                }
+                destroyInterstitialLoader()
                 result.success(null)
             }
             // NEW: explicit banner control from Flutter
@@ -176,23 +165,21 @@ class PrebidView internal constructor(
                         height,
                         refreshInterval
                     )
+                    bannerLoader?.loadAd()
                 }
                 result.success(null)
             }
             "showBanner" -> {
-                bannerLayout?.addView(bannerView)
+                if (adView != null) {
+                    bannerLayout?.addView(adView)
+                } else {
+                    Log.w(Tag, "showBanner: adView is null")
+                }
                 result.success(null)
             }
             "hideBanner" -> {
                 // There is no "hide" for a shown banner; destroy to ensure it won't show again.
-                try {
-                    bannerLayout?.removeView(bannerView)
-                    bannerView?.destroy()
-                } catch (e: Exception) {
-                    Log.w(Tag, "Error destroying bannerView: $e")
-                } finally {
-                    bannerView = null
-                }
+                destroyBannerView()
                 result.success(null)
             }
 
@@ -309,20 +296,23 @@ class PrebidView internal constructor(
 
         interstitialLoader?.setListener(object : MultiInterstitialAdListener {
             override fun onAdLoaded(sdk: SdkType) {
-                channel.invokeMethod("onAdLoaded", CONFIG_ID)
+                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                channel.invokeMethod("onAdLoaded", id)
                 Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name} (not auto-showing)")
                 // Do NOT call show here; Flutter must call "showInterstitial"
             }
 
             override fun onAdDisplayed(sdk: SdkType) {
-                channel.invokeMethod("onAdDisplayed", CONFIG_ID)
+                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                channel.invokeMethod("onAdDisplayed", id)
                 Log.d(Tag, "onAdDisplayed: Ad displayed from ${sdk.name}")
             }
 
             override fun onAdFailed(error: String?, sdk: SdkType?) {
-                channel.invokeMethod("onAdFailed", error)
+                val errorMsg = error ?: "Unknown error"
+                channel.invokeMethod("onAdFailed", errorMsg)
                 val sdkName = sdk?.name ?: "unknown SDK"
-                Log.d(Tag, "onAdFailed: $error (SDK: $sdkName)")
+                Log.d(Tag, "onAdFailed: $errorMsg (SDK: $sdkName)")
             }
 
             override fun onAdFailedToShow(error: String?, sdk: SdkType?) {
@@ -332,12 +322,14 @@ class PrebidView internal constructor(
             }
 
             override fun onAdClicked(sdk: SdkType) {
-                channel.invokeMethod("onAdClicked", CONFIG_ID)
+                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                channel.invokeMethod("onAdClicked", id)
                 Log.d(Tag, "onAdClicked: Ad clicked from ${sdk.name}")
             }
 
             override fun onAdClosed(sdk: SdkType) {
-                channel.invokeMethod("onAdClosed", CONFIG_ID)
+                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                channel.invokeMethod("onAdClosed", id)
                 Log.d(Tag, "onAdClosed: Ad closed from ${sdk.name}")
                 // Optional: after close, you may want to auto-load next
                 // interstitialLoader?.loadAd()
@@ -374,51 +366,74 @@ class PrebidView internal constructor(
         refreshInterval: Int?
     ) {
         val refresh = refreshInterval ?: 30
-        val current = bannerView
+        val current = bannerLoader
         if (current == null || lastBannerAdUnitId != adUnitId || lastBannerConfigId != configId) {
             try {
                 current?.destroy()
-                val eventHandler = GamBannerEventHandler(
-                    applicationContext,
-                    adUnitId,
-                    org.prebid.mobile.AdSize(width, height)
+                bannerLoader = MultiBannerLoader(
+                    context = applicationContext,
+                    adSize = AdSize(width, height),
+                    configId = configId,
+                    gamAdUnitId = adUnitId,
+                    autoRefreshDelay = refresh
                 )
-                bannerView = BannerView(applicationContext, configId, eventHandler)
 
-                bannerView?.setAutoRefreshDelay(refresh)
-                bannerView?.setBannerListener(object : BannerViewListener {
-                    override fun onAdLoaded(bannerView: BannerView?) {
-                        channel.invokeMethod("onAdLoaded", configId);
-                        Log.d(Tag, "onAdLoaded:")
+                bannerLoader?.setListener(object : MultiBannerViewListener {
+                    override fun onAdLoaded(view: View, sdk: SdkType) {
+                        adView = view
+                        val id = getAdId(sdk, configId, adUnitId)
+                        channel.invokeMethod("onAdLoaded", id);
+                        Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name} (not auto-showing)")
                     }
 
-                    override fun onAdDisplayed(bannerView: BannerView?) {
-                        channel.invokeMethod("onAdDisplayed", configId);
-                        Log.d(Tag, "onAdDisplayed:")
+                    override fun onAdFailed(bannerView: BannerView?, error: String?, sdk: SdkType?) {
+                        val errorMsg = error ?: "Unknown error"
+                        val sdkName = sdk?.name ?: "unknown SDK"
+                        channel.invokeMethod("onAdFailed", errorMsg)
+                        Log.d(Tag, "onAdFailed: $errorMsg (SDK: $sdkName)")
                     }
 
-                    override fun onAdFailed(bannerView: BannerView?, exception: AdException?) {
-                        channel.invokeMethod("onAdFailed", exception?.message);
-                        Log.d(Tag, "onAdFailed: $exception")
+                    override fun onAdClicked(bannerView: BannerView?, sdk: SdkType) {
+                        val id = getAdId(sdk, configId, adUnitId)
+                        channel.invokeMethod("onAdClicked", id)
+                        Log.d(Tag, "onAdClicked: Ad clicked from ${sdk.name}")
                     }
 
-                    override fun onAdClicked(bannerView: BannerView?) {
-                        channel.invokeMethod("onAdClicked", configId);
-                        Log.d(Tag, "onAdClicked:")
+                    override fun onAdClosed(bannerView: BannerView?, sdk: SdkType) {
+                        val id = getAdId(sdk, configId, adUnitId)
+                        channel.invokeMethod("onAdClosed", id)
+                        Log.d(Tag, "onAdClosed: Ad closed from ${sdk.name}")
                     }
 
-                    override fun onAdClosed(bannerView: BannerView?) {
-                        channel.invokeMethod("onAdClosed", configId);
-                        Log.d(Tag, "onAdClosed:")
+                    override fun onAdDisplayed(bannerAdView: BannerView?, sdk: SdkType) {
+                        bannerView = bannerAdView
+                        val id = getAdId(sdk, configId, adUnitId)
+                        channel.invokeMethod("onAdDisplayed", id)
+                        Log.d(Tag, "onAdDisplayed: Ad displayed from ${sdk.name}")
+                    }
+
+                    override fun onImpression(sdk: SdkType) {
+                        Log.d(Tag, "onImpression: Impression tracked from ${sdk.name}")
+                    }
+
+                    override fun onAdOpened(sdk: SdkType) {
+                        Log.d(Tag, "onAdOpened: Ad opened from ${sdk.name}")
                     }
                 })
 
-                bannerView?.loadAd()
+                bannerLoader?.loadAd()
             } catch (e: Exception) {
                 Log.w(Tag, "Error destroying old bannerView: $e")
             }
         }
     }
+
+    private fun getAdId(sdk: SdkType, configId: String, adUnitId: String): String =
+        when (sdk) {
+            SdkType.PREBID -> configId
+            SdkType.GAM -> adUnitId
+            else -> "unknown_id"
+        }
 
     private fun createRewardVideo(AD_UNIT_ID: String, CONFIG_ID: String) {
         Log.d(Tag, "Prebid reward video: $CONFIG_ID/$AD_UNIT_ID")
@@ -477,7 +492,7 @@ class PrebidView internal constructor(
                                 Tag,
                                 "Success in finding Prebid creative size"
                             )
-                            bannerAdView.setAdSizes(AdSize(width, height))
+                            bannerAdView.setAdSizes(com.google.android.gms.ads.AdSize(width, height))
                         }
 
                         override fun failure(error: PbFindSizeError) {
@@ -494,33 +509,29 @@ class PrebidView internal constructor(
     }
 
     /**
-     * Interstitial ad listener that, if ad is loaded, shows that ad
-     * (Legacy GAM path; unused with MultiInterstitialAdLoader but kept for reference.)
+     * A method for stopping auction and removing reference to the banner, as well as hiding
+     * banner from the layout. The same applies to the interstitial as well.
      */
-    private fun interstitialListener(): AdManagerInterstitialAdLoadCallback {
-        return object : AdManagerInterstitialAdLoadCallback() {
-            override fun onAdLoaded(adManagerInterstitialAd: AdManagerInterstitialAd) {
-                super.onAdLoaded(adManagerInterstitialAd)
-                adManagerInterstitialAd.show(appActivity)
-            }
+    private fun onDestroy() {
+        destroyBannerView()
+        destroyInterstitialLoader()
+    }
 
-            override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                super.onAdFailedToLoad(loadAdError)
-                Log.e(Tag, "Ad failed to load: $loadAdError")
-            }
+    private fun destroyBannerView() {
+        try {
+            bannerLayout?.removeAllViews()
+            bannerView?.destroy()
+            bannerLoader?.destroy()
+        } catch (e: Exception) {
+            Log.w(Tag, "Error destroying bannerView: $e")
+        } finally {
+            bannerView = null
+            bannerLoader = null
+            adView = null
         }
     }
 
-    /**
-     * A method for stopping auction and removing reference to the bannerAdUnit, as well as hiding
-     * banner from the layout
-     */
-    private fun onDestroy() {
-        if (bannerView != null) {
-            Log.d(Tag, "Destroying Prebid auction (banner)")
-            bannerView = null
-        }
-        // NEW: destroy interstitial loader too
+    private fun destroyInterstitialLoader() {
         try {
             interstitialLoader?.destroy()
         } catch (e: Exception) {
