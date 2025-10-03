@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.0.7.5
+# Added
+* Added  MultiBanner method (waterfall with SDK priority list)
+
 ## 0.0.7.4
 # Fixed
 * Fixed bug with SDK Log
