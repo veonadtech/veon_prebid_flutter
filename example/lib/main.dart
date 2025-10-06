@@ -203,6 +203,14 @@ class _MyAppState extends State<MyAppState> {
               },
             ),
             ElevatedButton(
+              child: const Text('load Interstitial'),
+              onPressed: () {
+                setState(() {
+                  _controller.loadInterstitial();
+                });
+              },
+            ),
+            ElevatedButton(
               child: const Text('simple test banner 320x50'),
               onPressed: () {
                 setState(() {

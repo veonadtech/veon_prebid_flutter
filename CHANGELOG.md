@@ -1,6 +1,9 @@
 # CHANGELOG
 
 ## 0.0.7.5
+# Added
+* Added  MultiBanner method (waterfall with SDK priority list)
+
 # Changed
 * iOS version updated to 0.0.4
 
