@@ -1,7 +1,7 @@
 import AppTrackingTransparency
 import GoogleMobileAds
 import PrebidMobile
-import VeonPrebidMobileGAMEventHandlers
+import PrebidMobileGAMEventHandlers
 
 class PrebidBannerView: NSObject {
 
