@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.0.7.5.2
+# Changed
+* import VeonPrebidMobileGAMEventHandlers to PrebidMobileGAMEventHandlers in the iOS
+
 ## 0.0.7.5
 # Added
 * Added  MultiBanner method (waterfall with SDK priority list)
@@ -28,7 +32,7 @@
 * Added low/show/hide methods for Interstitial
 * Added the config URL to the SDK initialization method to set the SDK priority and manage logging
 
-# Fixed
+# Fixed1
 * Fixed bug with changing ver com.google.guava:listenablefuture
 
 ## 0.0.7.1
