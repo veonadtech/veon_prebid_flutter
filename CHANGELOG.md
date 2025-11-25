@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 0.0.7.5.3
+## Changed
+* Redirect bug fixed
+* Interstitial Rendering method bug fixed
+
 ## 0.0.7.5.2
 # Changed
 * import VeonPrebidMobileGAMEventHandlers to PrebidMobileGAMEventHandlers in the iOS
