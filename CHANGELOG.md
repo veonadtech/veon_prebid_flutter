@@ -1,5 +1,14 @@
 # CHANGELOG
 
+# 0.0.8
+## Fixed
+* Fixed DeviceIP
+## Changed
+* Android SDK has been updated to ver 35
+* Kotlin ver has been updated to ver 2.1.0
+* Java ver has been updated to ver 17
+* Prebid Android SDK ver has been updated to 0.0.7.9
+
 # 0.0.7.5.3
 ## Changed
 * Redirect bug fixed
