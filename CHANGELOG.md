@@ -1,5 +1,9 @@
 # CHANGELOG
 
+# 0.0.9
+## Changed
+* Second fragment separator in URL fixed
+
 # 0.0.8
 ## Fixed
 * Fixed DeviceIP
