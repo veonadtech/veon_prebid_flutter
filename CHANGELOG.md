@@ -1,5 +1,11 @@
 # CHANGELOG
 
+# 0.1.0
+## Changed
+* Android SDK version updated to 0.1.0
+## Fixed
+* Race condition on logging bug fixed
+
 # 0.0.9
 ## Changed
 * Second fragment separator in URL fixed
