@@ -18,6 +18,7 @@ class PrebidMobile {
       String prebidAccountID,
       int timeoutMillis,
       bool pbsDebug,
+      bool externalBrowser,
       PrebidSdkListener sdkListener
   ) {
     _sdkListener = sdkListener;
@@ -30,7 +31,8 @@ class PrebidMobile {
         "configHost": configHost,
         "accountID": prebidAccountID,
         "timeoutMillis": timeoutMillis,
-        "pbsDebug": pbsDebug
+        "pbsDebug": pbsDebug,
+        "externalBrowser": externalBrowser
       });
     }else{
       const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios_init');

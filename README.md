@@ -26,6 +26,7 @@ dependencies:
  setupad_prebid_flutter:
    git:
      url: git@github.com:veonadtech/veon_prebid_flutter.git
+     ref: 0.2.0
 ```
 
 ## Adding app ID
@@ -65,12 +66,15 @@ import 'package:setupad_prebid_flutter/prebid_mobile.dart';
 
 Then, add `initializeSDK()`method.
 ```dart
-const PrebidMobile().initializeSDK(HOST, ACCOUNT_ID, TIMEOUT, PBSDEBUG)
+const PrebidMobile().initializeSDK(PREBID_HOST, CONFIG_HOST, ACCOUNT_ID, TIMEOUT, PBSDEBUG, EXTERNAL_BROWSER, INIT_LISTENER)
 ```
-* `HOST` is a prebid server host with protocol and path. example: `https://prebid.veonadx.com/openrtb2/auction`
+* `PREBID_HOST` is a prebid server host with protocol and path. example: `https://prebid.veonadx.com/openrtb2/auction`
+* `CONFIG_HOST` is a path to the config file. Example:`https://dcdn.veonadx.com/sdk/uz.beeline.odp/config.json`
 * `ACCOUNT_ID` is a placeholder for your Prebid account ID.
 *  `TIMEOUT` is a parameter that sets how much time bidders have to submit their bids. It is important to choose a sufficient timeout - if it is too short, there is a chance to get less bids, and if it is too long, it can slow down ad loading and user might wait too long for the ads to appear.
 * `PBSDEBUG` is a boolean type parameter, if it is set to `true`, it adds a debug flag ("test": 1) into Prebid auction request, which allows to display only test ads and see full Prebid auction response. If none of this is required, you can set it to false.
+* `EXTERNAL_BROSER` is a boolean type parameter, when true, URLs are opened in an external browser. When false, a WebView is used.
+* `INIT_LISTENER` this class implements the Veon Prebid SDK initialization callback interface _PrebidSdkListener()
 
 # Ads integration
 Currently this plugin supports two ad formats: banners and interstitial ads. When creating ad object, it is necessary to specify what ad type it is. Ad type can be written in lowercase ("banner"), uppercase ("BANNER") or capitalization ("Banner").

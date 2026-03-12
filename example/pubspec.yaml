@@ -13,6 +13,7 @@ dependencies:
 #  setupad_prebid_flutter:
 #    git:
 #      url: git@github.com:veonadtech/veon_prebid_flutter.git
+#      ref: release/0.2.0
 
   setupad_prebid_flutter:
     path: ../
