@@ -15,6 +15,7 @@ void main() {
       "test",
       30000,
       true,
+      false,
       _PrebidSdkListener()
   );
   runApp(const MyApp());

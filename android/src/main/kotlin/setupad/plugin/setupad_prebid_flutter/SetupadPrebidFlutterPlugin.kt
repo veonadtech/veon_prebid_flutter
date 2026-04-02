@@ -37,7 +37,11 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                     val prebidAccountID = arguments?.get("accountID") as? String ?: ""
                     val timeoutMillis = arguments?.get("timeoutMillis") as? Int ?: 0
                     val pbsDebug = arguments?.get("pbsDebug") as? Boolean ?: false
-                    initializePrebidMobile(prebidHost, configHost, prebidAccountID, timeoutMillis, pbsDebug)
+                    val externalBrowser = arguments?.get("externalBrowser") as? Boolean ?: false
+                    initializePrebidMobile(
+                        prebidHost, configHost, prebidAccountID,
+                        timeoutMillis, pbsDebug, externalBrowser
+                    )
                 } else {
                     result.notImplemented()
                 }
@@ -84,8 +88,10 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
     /**
      * Prebid Mobile SDK initialization method
      */
-    private fun initializePrebidMobile(prebidHost: String, configHost: String,
-                                       prebidAccountID: String, timeout: Int, pbs: Boolean) {
+    private fun initializePrebidMobile(
+        prebidHost: String, configHost: String, prebidAccountID: String,
+        timeout: Int, pbs: Boolean, externalBrowser: Boolean
+    ) {
 
         activityFuture.thenAccept { activity ->
             PrebidMobile.setPrebidServerAccountId(prebidAccountID)
@@ -118,6 +124,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
             PrebidMobile.checkGoogleMobileAdsCompatibility(MobileAds.getVersion().toString())
             PrebidMobile.setTimeoutMillis(timeout)
             PrebidMobile.setShareGeoLocation(true)
+            PrebidMobile.useExternalBrowser = externalBrowser
         }
     }
 }

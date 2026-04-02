@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# 0.2.0
+## Changed
+* Android SDK version updated to 0.2.0
+* iOS version updated to 0.0.5
+## Added
+* Added useExternalBrowser option (allows opening links in an external browser instead of WebView)
+
 # 0.1.2
 ## Fixed
 * Added necessary files for starting unit tests. Changed test of SDK initialization.
