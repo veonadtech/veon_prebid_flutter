@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# 0.3.0
+* Android SDK version updated to 0.3.0
+
 # 0.2.0
 ## Changed
 * Android SDK version updated to 0.2.0
