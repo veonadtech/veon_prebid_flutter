@@ -2,6 +2,9 @@
 
 # 0.3.0
 * Android SDK version updated to 0.3.0
+* iOS SDK version updated to 0.1.0
+* iOS minimum deployment target raised to 13.0
+* Google-Mobile-Ads-SDK upgraded to 13.0.0 (iOS)
 ### Fixed
 * Make NativeDataAsset len optional like iOS
 * hb_cache_id_local is not added to targetingKeywords if adObject is null
