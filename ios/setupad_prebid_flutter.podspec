@@ -9,7 +9,7 @@ A Flutter plugin that integrates Prebid Mobile SDK for both Android and iOS plat
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'VEON' => 'info@veon.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'setupad_prebid_flutter/Sources/setupad_prebid_flutter/**/*'
   s.dependency 'Flutter'
   s.dependency 'Google-Mobile-Ads-SDK', '13.0.0'
   s.dependency 'VeonPrebidMobileGAMEventHandlers', '0.1.0'

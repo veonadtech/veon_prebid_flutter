@@ -5,3 +5,33 @@ example/.dart_tool
 example/build
 example/android/.gradle
 example/android/.idea
+
+# Flutter / Dart
+.flutter-plugins
+.flutter-plugins-dependencies
+**/.flutter-plugins-dependencies
+
+# Plugin pubspec.lock should not be checked in (libraries don't pin)
+/pubspec.lock
+
+# Android local SDK paths and build artifacts
+**/local.properties
+**/.cxx/
+android/gradle/
+android/gradle_fix.md
+
+# iOS / Xcode generated and ephemeral files
+**/Flutter/ephemeral/
+**/Flutter/Flutter.framework
+**/Flutter/Flutter.podspec
+**/Flutter/Generated.xcconfig
+**/Flutter/flutter_export_environment.sh
+**/Pods/
+**/.symlinks/
+**/xcuserdata/
+ios/.gitignore
+
+# Plugin SPM build artifacts (don't pin transitive resolutions for a library)
+ios/setupad_prebid_flutter/.build/
+ios/setupad_prebid_flutter/.swiftpm/
+ios/setupad_prebid_flutter/Package.resolved

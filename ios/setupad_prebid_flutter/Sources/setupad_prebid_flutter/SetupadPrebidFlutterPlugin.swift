@@ -1,15 +1,17 @@
+import Flutter
 import GoogleMobileAds
 import PrebidMobile
 
-public class SwiftSetupadPrebidFlutterPlugin: NSObject {
-    
+@objc(SetupadPrebidFlutterPlugin)
+public class SetupadPrebidFlutterPlugin: NSObject {
+
     // MARK: - Constants
     private enum ChannelNames {
         static let main = "setupad_prebid_flutter"
         static let platformSpecific = "setupad.plugin.setupad_prebid_flutter/ios_init"
         static let factory = "setupad.plugin.setupad_prebid_flutter"
     }
-    
+
     // MARK: - Private Methods
     func handleStartPrebid(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let arguments = call.arguments as? [String: Any] else {
@@ -17,20 +19,20 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject {
             result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
             return
         }
-        
+
         let serverHost = arguments["prebidHost"] as? String ?? ""
         let accountId = arguments["accountID"] as? String ?? ""
         let timeoutMills = arguments["timeoutMillis"] as? Int ?? 30000
-        
+
         NSLog("LOG: init iOS SDK")
         NSLog("LOG: host: \(serverHost)")
         NSLog("LOG: accountId: \(accountId)")
         NSLog("LOG: timeoutMills: \(timeoutMills)")
-        
+
         Prebid.shared.prebidServerAccountId = accountId
         Prebid.shared.timeoutMillis = timeoutMills
         Prebid.shared.logLevel = .debug
-        
+
         do {
             try Prebid.initializeSDK(
                 serverURL: serverHost,
@@ -44,7 +46,7 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject {
             result(FlutterError(code: "INIT_ERROR", message: "Failed to initialize Prebid SDK", details: error.localizedDescription))
         }
     }
-    
+
     func handlePrebidInitializationResult(status: PrebidInitializationStatus, error: Error?) {
         switch status {
         case .succeeded:
@@ -61,36 +63,36 @@ public class SwiftSetupadPrebidFlutterPlugin: NSObject {
             break
         }
     }
-    
+
 }
 
 // MARK: - FlutterPlugin Extension
-extension SwiftSetupadPrebidFlutterPlugin: FlutterPlugin {
-    
+extension SetupadPrebidFlutterPlugin: FlutterPlugin {
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         // Register platform view factory
         registrar.register(
             PrebidBannerFactory(messenger: registrar.messenger()),
             withId: ChannelNames.factory
         )
-        
+
         // Setup method channels
         let mainChannel = FlutterMethodChannel(
             name: ChannelNames.main,
             binaryMessenger: registrar.messenger()
         )
-        
+
         let iosChannel = FlutterMethodChannel(
             name: ChannelNames.platformSpecific,
             binaryMessenger: registrar.messenger()
         )
-        
+
         // Register instance as delegate for both channels
-        let instance = SwiftSetupadPrebidFlutterPlugin()
+        let instance = SetupadPrebidFlutterPlugin()
         registrar.addMethodCallDelegate(instance, channel: mainChannel)
         registrar.addMethodCallDelegate(instance, channel: iosChannel)
     }
-    
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         if call.method == "startPrebid" {
             handleStartPrebid(call: call, result: result)
@@ -99,5 +101,5 @@ extension SwiftSetupadPrebidFlutterPlugin: FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
-    
+
 }
