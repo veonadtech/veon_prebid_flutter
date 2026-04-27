@@ -1,3 +1,4 @@
+import Flutter
 import Foundation
 
 class PrebidBannerFactory: NSObject, FlutterPlatformViewFactory {
