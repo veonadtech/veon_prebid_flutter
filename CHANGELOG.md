@@ -1,5 +1,14 @@
 # CHANGELOG
 
+# 0.4.0
+### Changed
+* iOS dependencies migrated from CocoaPods to Swift Package Manager (CocoaPods fallback retained for legacy consumers)
+* iOS source layout moved from `ios/Classes/` to `ios/setupad_prebid_flutter/Sources/setupad_prebid_flutter/`
+* Plugin Swift entry-point renamed to `SetupadPrebidFlutterPlugin` and registered via `@objc` directly
+* Flutter SDK constraint raised to `>=3.24.0` (required for Swift Package Manager support)
+### Removed
+* Objective-C shim (`SetupadPrebidFlutterPlugin.h/.m`) — plugin is now Swift-only on iOS
+
 # 0.3.0
 * Android SDK version updated to 0.3.0
 * iOS SDK version updated to 0.1.0
