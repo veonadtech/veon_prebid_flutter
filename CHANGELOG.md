@@ -1,5 +1,28 @@
 # CHANGELOG
 
+# 0.3.0
+* Android SDK version updated to 0.3.0
+* iOS SDK version updated to 0.1.0
+* iOS minimum deployment target raised to 13.0
+* Google-Mobile-Ads-SDK upgraded to 13.0.0 (iOS)
+### Fixed
+* Make NativeDataAsset len optional like iOS
+* hb_cache_id_local is not added to targetingKeywords if adObject is null
+* Fix bar layout params is null
+* Fix Adm native wrapper parsing
+* Exception during looking for cache
+* Fix Unit tests
+### Changed
+* Send ifa_type for IFA
+* Resume refreshing for Mediation banner
+* Readable exceptions and useless logs
+* ORTB config for ad unit level (Aligns with iOS implementation)
+* Reusable rendering API banner (removes the destruction of Prebid WebView when it is detached
+  from the screen. So now the Prebid banner can be used in the RecyclerView and can be reused
+  many times to show the advertisement faster.)
+* minSdkVersion upgraded to 23
+* GAM SDK upgraded to 25.1.0
+
 # 0.4.0
 ### Changed
 * iOS dependencies migrated from CocoaPods to Swift Package Manager (CocoaPods fallback retained for legacy consumers)
