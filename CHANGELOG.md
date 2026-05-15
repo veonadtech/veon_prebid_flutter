@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 0.5.0
+* Android version upgraded to 0.3.2
+* Enables video player click for rewarded ads with clickthrough URL
+* GAM ad is requested even if the Prebid SDK is not initialized
+
 # 0.4.0
 ### Changed
 * iOS dependencies migrated from CocoaPods to Swift Package Manager (CocoaPods fallback retained for legacy consumers)
