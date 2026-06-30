@@ -1,5 +1,27 @@
 # CHANGELOG
 
+# 0.6.0
+## Android version upgraded to 0.4.2
+### Added
+* - Ad-request telemetry: GAM and Prebid ad requests now emit a `REQUESTED` (`SdkAdStatus.REQUESTED`)
+  log event, complementing the existing post-response events. Prebid auction requests are logged from
+  `BidLoader` (banner and interstitial, including auto-refresh; rewarded is excluded); GAM requests are
+  logged from the legacy and Next-Gen multi-ad loaders and the GAM banner/interstitial event handlers
+* Multi-loader support for the Next-Gen GMA SDK: `MultiBannerLoaderNextGenGAM` and
+  `MultiInterstitialAdLoaderNextGenGAM` race Prebid and Google's Next-Gen GMA SDK by the configured
+  priority order, mirroring the existing GAM/Prebid multi-loaders
+
+### Fixed
+* Update BannerView to log the specific exception message instead of a hardcoded string
+* Banner multi-loader now promotes an already-loaded lower-priority SDK when a higher-priority
+    one fails after it had loaded (previously the loaded ad could be silently dropped)
+
+### Changed
+* Extracted shared, SDK-agnostic base classes for the multi-ad loaders
+  (`BaseMultiBannerLoader`, `BaseMultiInterstitialAdLoader` in `api/multiloadercommon`) and unified
+  the banner/interstitial multi-loader listeners to remove duplication between the legacy and
+  Next-Gen implementations
+
 # 0.5.0
 * Android version upgraded to 0.3.2
 * Enables video player click for rewarded ads with clickthrough URL

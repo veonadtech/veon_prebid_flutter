@@ -22,10 +22,10 @@ import org.prebid.mobile.addendum.PbFindSizeError
 import org.prebid.mobile.AdSize
 import org.prebid.mobile.api.data.SdkType
 import org.prebid.mobile.api.exceptions.AdException
-import org.prebid.mobile.api.multiadloader.MultiBannerLoader
-import org.prebid.mobile.api.multiadloader.MultiInterstitialAdLoader
-import org.prebid.mobile.api.multiadloader.listeners.MultiBannerViewListener
-import org.prebid.mobile.api.multiadloader.listeners.MultiInterstitialAdListener
+import org.prebid.mobile.api.multiadloader.MultiBannerLoaderLegacyGam
+import org.prebid.mobile.api.multiadloader.MultiInterstitialAdLoaderLegacyGam
+import org.prebid.mobile.api.multiloadercommon.MultiBannerViewListener
+import org.prebid.mobile.api.multiloadercommon.MultiInterstitialAdListener
 import org.prebid.mobile.api.rendering.BannerView
 import org.prebid.mobile.api.rendering.RewardedAdUnit
 import org.prebid.mobile.api.rendering.listeners.RewardedAdUnitListener
@@ -48,14 +48,14 @@ class PrebidView internal constructor(
     private var bannerLayout: ViewGroup?
 
     // NEW: keep a reference to MultiInterstitialAdLoader so we can control it later
-    private var interstitialLoader: MultiInterstitialAdLoader? = null
+    private var interstitialLoader: MultiInterstitialAdLoaderLegacyGam? = null
     // Keep last used IDs so "loadInterstitial" works even if called later
     private var lastInterstitialConfigId: String? = null
     private var lastInterstitialAdUnitId: String? = null
 
     // NEW: keep a reference to BannerView so we can control it later
     private var bannerView: BannerView? = null
-    private var bannerLoader: MultiBannerLoader? = null
+    private var bannerLoader: MultiBannerLoaderLegacyGam? = null
     private var adView: View? = null
 
     // Keep last used IDs and size so "loadBanner" works even if called later
@@ -349,7 +349,7 @@ class PrebidView internal constructor(
             } catch (e: Exception) {
                 Log.w(Tag, "Error destroying old interstitial loader: $e")
             }
-            interstitialLoader = MultiInterstitialAdLoader(
+            interstitialLoader = MultiInterstitialAdLoaderLegacyGam(
                 context = appActivity,
                 configId = configId,
                 gamAdUnitId = adUnitId
@@ -370,7 +370,7 @@ class PrebidView internal constructor(
         if (current == null || lastBannerAdUnitId != adUnitId || lastBannerConfigId != configId) {
             try {
                 current?.destroy()
-                bannerLoader = MultiBannerLoader(
+                bannerLoader = MultiBannerLoaderLegacyGam(
                     context = applicationContext,
                     adSize = AdSize(width, height),
                     configId = configId,
