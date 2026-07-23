@@ -1,5 +1,9 @@
 # CHANGELOG
 
+# 0.6.1
+### Changed
+* Set minheightperc and minwidthperc equal 100% in the Demo app
+
 # 0.6.0
 ## Android version upgraded to 0.4.2
 ### Added
