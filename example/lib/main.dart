@@ -125,8 +125,8 @@ class _MyAppState extends State<MyAppState> {
         adType: AdType.interstitial,
         configId: '_beeline_uz_android_wheel_test2_interstitial',
         adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_wheel_test2_interstitial',
-        width: 50,
-        height: 50,
+        width: 100,
+        height: 100,
         refreshInterval: null,
         eventListener: _interstitialEventListener,
         prebidController: _controller
