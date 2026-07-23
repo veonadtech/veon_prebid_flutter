@@ -1,6 +1,10 @@
 # CHANGELOG
 
 # 0.6.0
+### Changed
+* Set minheightperc and minwidthperc equal 100% in the Demo app
+
+# 0.6.0
 ## Android version upgraded to 0.4.2
 ### Added
 * - Ad-request telemetry: GAM and Prebid ad requests now emit a `REQUESTED` (`SdkAdStatus.REQUESTED`)
