@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 0.6.2
+## Changed
+* Interstitial container size is now derived from the bid response (`bid.w`/`bid.h`) instead of
+* always filling the screen, capped so it never exceeds the display's size
+
 # 0.6.1
 ### Changed
 * Set minheightperc and minwidthperc equal 100% in the Demo app
