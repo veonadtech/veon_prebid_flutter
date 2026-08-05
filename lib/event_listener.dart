@@ -8,4 +8,6 @@ abstract class EventListener {
   onAdClicked(String configId);
 
   onAdClosed(String configId);
+
+  onAdImpression(String configId);
 }

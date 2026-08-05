@@ -12,8 +12,15 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAd
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAdLoadCallback
+import com.yandex.mobile.ads.banner.BannerAdEventListener
+import com.yandex.mobile.ads.banner.BannerAdSize
+import com.yandex.mobile.ads.banner.BannerAdView
+import com.yandex.mobile.ads.common.AdRequest
+import com.yandex.mobile.ads.common.AdRequestError
+import com.yandex.mobile.ads.common.ImpressionData
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
+
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
@@ -24,8 +31,8 @@ import org.prebid.mobile.api.data.SdkType
 import org.prebid.mobile.api.exceptions.AdException
 import org.prebid.mobile.api.multiadloader.MultiBannerLoaderLegacyGam
 import org.prebid.mobile.api.multiadloader.MultiInterstitialAdLoaderLegacyGam
-import org.prebid.mobile.api.multiloadercommon.MultiBannerViewListener
-import org.prebid.mobile.api.multiloadercommon.MultiInterstitialAdListener
+import org.prebid.mobile.api.multiadloader.listeners.MultiBannerViewListener
+import org.prebid.mobile.api.multiadloader.listeners.MultiInterstitialAdListener
 import org.prebid.mobile.api.rendering.BannerView
 import org.prebid.mobile.api.rendering.RewardedAdUnit
 import org.prebid.mobile.api.rendering.listeners.RewardedAdUnitListener
@@ -51,7 +58,8 @@ class PrebidView internal constructor(
     private var interstitialLoader: MultiInterstitialAdLoaderLegacyGam? = null
     // Keep last used IDs so "loadInterstitial" works even if called later
     private var lastInterstitialConfigId: String? = null
-    private var lastInterstitialAdUnitId: String? = null
+    private var lastInterstitialGamAdUnitId: String? = null
+    private var lastInterstitialYandexAdUnitId: String? = null
 
     // NEW: keep a reference to BannerView so we can control it later
     private var bannerView: BannerView? = null
@@ -60,7 +68,8 @@ class PrebidView internal constructor(
 
     // Keep last used IDs and size so "loadBanner" works even if called later
     private var lastBannerConfigId: String? = null
-    private var lastBannerAdUnitId: String? = null
+    private var lastBannerGamAdUnitId: String? = null
+    private var lastBannerYandexAdUnitId: String? = null
     private var lastBannerWidth: Int? = null
     private var lastBannerHeight: Int? = null
     private var lastRefreshInterval: Int? = null
@@ -126,11 +135,12 @@ class PrebidView internal constructor(
             "loadInterstitial" -> {
                 // Recreate loader if needed and load
                 val cfg = lastInterstitialConfigId
-                val adu = lastInterstitialAdUnitId
-                if (cfg.isNullOrEmpty() || adu.isNullOrEmpty()) {
-                    Log.w(Tag, "loadInterstitial called but config/adUnit not set yet (call setParams first).")
+                val gamAdunit = lastInterstitialGamAdUnitId
+                val yandexAdunit = lastInterstitialYandexAdUnitId
+                if (cfg.isNullOrEmpty() || gamAdunit.isNullOrEmpty() || yandexAdunit.isNullOrEmpty()) {
+                    Log.w(Tag, "loadInterstitial called but config/gamAdUnit/yandexAdUnit not set yet (call setParams first).")
                 } else {
-                    ensureInterstitialLoader(adu, cfg)
+                    ensureInterstitialLoader(gamAdunit, yandexAdunit, cfg)
                     interstitialLoader?.loadAd()
                 }
                 result.success(null)
@@ -146,20 +156,22 @@ class PrebidView internal constructor(
             }
             // NEW: explicit banner control from Flutter
             "loadBanner" -> {
-                val adUnitId = lastBannerAdUnitId
+                val gamAdUnitId = lastBannerGamAdUnitId
+                val yandexAdUnitId = lastBannerYandexAdUnitId
                 val configId = lastBannerConfigId
                 val width = lastBannerWidth
                 val height = lastBannerHeight
                 val refreshInterval = lastRefreshInterval
 
                 // Recreate loader if needed and load
-                if (configId.isNullOrEmpty() || adUnitId.isNullOrEmpty()
+                if (configId.isNullOrEmpty() || gamAdUnitId.isNullOrEmpty() || yandexAdUnitId.isNullOrEmpty()
                     || width == null || height == null
                 ) {
-                    Log.w(Tag, "loadBanner called but config/adUnit/width/height not set yet (call setParams first).")
+                    Log.w(Tag, "loadBanner called but config/gamAdUnit/yandexAdUnitId/width/height not set yet (call setParams first).")
                 } else {
                     ensureBannerLoader(
-                        adUnitId,
+                        gamAdUnitId,
+                        yandexAdUnitId,
                         configId,
                         width,
                         height,
@@ -194,7 +206,8 @@ class PrebidView internal constructor(
         Log.d(Tag, "Setting ad parameters")
         val arguments = call.arguments as? Map<*, *>
         val adType = arguments?.get("adType") as? String ?: ""
-        val adUnitId = arguments?.get("adUnitId") as? String ?: ""
+        val gamAdUnitId = arguments?.get("gamAdUnitId") as? String ?: ""
+        val yandexAdUnitId = arguments?.get("yandexAdUnitId") as? String ?: ""
         val configId = arguments?.get("configId") as? String ?: ""
         val width = arguments?.get("width") as? Int ?: 0
         val height = arguments?.get("height") as? Int ?: 0
@@ -213,15 +226,19 @@ class PrebidView internal constructor(
 
             else -> {
                 when {
-                    adUnitId == "" && configId != "" -> { //adUnitID tuscias
-                        Log.e(Tag, applicationContext.getString(R.string.emptyAdUnitID))
+                    gamAdUnitId == "" && yandexAdUnitId != "" && configId != "" -> { //gamAdUnitID tuscias
+                        Log.e(Tag, applicationContext.getString(R.string.emptyGamAdUnitID))
                     }
 
-                    adUnitId != "" && configId == "" -> { //configID tuscias
+                    gamAdUnitId != "" && yandexAdUnitId != "" && configId == "" -> { //configID tuscias
                         Log.e(Tag, applicationContext.getString(R.string.emptyConfigID))
                     }
 
-                    adUnitId == "" && configId == "" -> { //ad unit ir config ID tusti
+                    gamAdUnitId != "" && yandexAdUnitId == "" && configId != "" -> { //yandexAdUnitId tuscias
+                        Log.e(Tag, applicationContext.getString(R.string.emptyYandexAdUnitID))
+                    }
+
+                    gamAdUnitId == "" && yandexAdUnitId == "" && configId == "" -> { //gam ad unit, yandex ad unit ir config ID tusti
                         Log.e(Tag, applicationContext.getString(R.string.emptyAdUnitConfigID))
                     }
 
@@ -236,13 +253,13 @@ class PrebidView internal constructor(
                     else -> {
                         Log.d(Tag, "Parameters set successfully!")
                         when (adType.lowercase()) {
-                            "banner" -> createBanner(adUnitId, configId, width, height, refreshInterval)
+                            "banner" -> createBanner(gamAdUnitId, yandexAdUnitId, configId, width, height, refreshInterval)
                             "interstitial" -> {
-                                createInterstitial(adUnitId, configId)
+                                createInterstitial(gamAdUnitId, yandexAdUnitId, configId)
                                 bannerLayout?.visibility = View.GONE
                             }
 
-                            "rewardvideo" -> createRewardVideo(adUnitId, configId)
+                            "rewardvideo" -> createRewardVideo(gamAdUnitId, configId)
 
                             else -> {}
                         }
@@ -256,24 +273,27 @@ class PrebidView internal constructor(
      * Setting banner parameters and fetching demand
      */
     private fun createBanner(
-        AD_UNIT_ID: String,
+        GAM_AD_UNIT_ID: String,
+        YANDEX_AD_UNIT_ID: String,
         CONFIG_ID: String,
         width: Int,
         height: Int,
         refreshInterval: Int
     ) {
 
-        Log.d(Tag, "Prebid banner: $CONFIG_ID/$AD_UNIT_ID")
+        Log.d(Tag, "Prebid banner: $CONFIG_ID/$GAM_AD_UNIT_ID/$YANDEX_AD_UNIT_ID")
 
         // Remember IDs and size for future explicit loads
-        lastBannerAdUnitId = AD_UNIT_ID
+        lastBannerGamAdUnitId = GAM_AD_UNIT_ID
+        lastBannerYandexAdUnitId = YANDEX_AD_UNIT_ID
         lastBannerConfigId = CONFIG_ID
         lastBannerWidth = width
         lastBannerHeight = height
         lastRefreshInterval = refreshInterval
 
         ensureBannerLoader(
-            AD_UNIT_ID,
+            GAM_AD_UNIT_ID,
+            YANDEX_AD_UNIT_ID,
             CONFIG_ID,
             width,
             height,
@@ -285,25 +305,25 @@ class PrebidView internal constructor(
      * Setting interstitial ad parameters and fetching demand
      * NOTE: No auto-show. Use channel "showInterstitial" to display later.
      */
-    private fun createInterstitial(AD_UNIT_ID: String, CONFIG_ID: String) {
-        Log.d(Tag, "Prebid interstitial: $CONFIG_ID/$AD_UNIT_ID")
+    private fun createInterstitial(GAM_AD_UNIT_ID: String, YANDEX_AD_UNIT_ID: String, CONFIG_ID: String) {
+        Log.d(Tag, "Prebid interstitial: $CONFIG_ID/$GAM_AD_UNIT_ID/$YANDEX_AD_UNIT_ID")
 
         // Remember IDs for future explicit loads
-        lastInterstitialAdUnitId = AD_UNIT_ID
+        lastInterstitialGamAdUnitId = GAM_AD_UNIT_ID
+        lastInterstitialYandexAdUnitId = YANDEX_AD_UNIT_ID
         lastInterstitialConfigId = CONFIG_ID
 
-        ensureInterstitialLoader(AD_UNIT_ID, CONFIG_ID)
-
+        ensureInterstitialLoader(GAM_AD_UNIT_ID, YANDEX_AD_UNIT_ID, CONFIG_ID)
         interstitialLoader?.setListener(object : MultiInterstitialAdListener {
             override fun onAdLoaded(sdk: SdkType) {
-                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                val id = getAdId(sdk, CONFIG_ID, GAM_AD_UNIT_ID, YANDEX_AD_UNIT_ID)
                 channel.invokeMethod("onAdLoaded", id)
                 Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name} (not auto-showing)")
                 // Do NOT call show here; Flutter must call "showInterstitial"
             }
 
             override fun onAdDisplayed(sdk: SdkType) {
-                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                val id = getAdId(sdk, CONFIG_ID, GAM_AD_UNIT_ID, YANDEX_AD_UNIT_ID)
                 channel.invokeMethod("onAdDisplayed", id)
                 Log.d(Tag, "onAdDisplayed: Ad displayed from ${sdk.name}")
             }
@@ -322,17 +342,23 @@ class PrebidView internal constructor(
             }
 
             override fun onAdClicked(sdk: SdkType) {
-                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                val id = getAdId(sdk, CONFIG_ID, GAM_AD_UNIT_ID, YANDEX_AD_UNIT_ID)
                 channel.invokeMethod("onAdClicked", id)
                 Log.d(Tag, "onAdClicked: Ad clicked from ${sdk.name}")
             }
 
             override fun onAdClosed(sdk: SdkType) {
-                val id = getAdId(sdk, CONFIG_ID, AD_UNIT_ID)
+                val id = getAdId(sdk, CONFIG_ID, GAM_AD_UNIT_ID, YANDEX_AD_UNIT_ID)
                 channel.invokeMethod("onAdClosed", id)
                 Log.d(Tag, "onAdClosed: Ad closed from ${sdk.name}")
                 // Optional: after close, you may want to auto-load next
                 // interstitialLoader?.loadAd()
+            }
+
+            override fun onImpression(impressionData: ImpressionData?, sdk: SdkType) {
+                val id = getAdId(sdk, CONFIG_ID, GAM_AD_UNIT_ID, YANDEX_AD_UNIT_ID)
+                channel.invokeMethod("onImpression", id)
+                Log.d(Tag, "Interstitial impression (${sdk.name})")
             }
         })
 
@@ -341,9 +367,10 @@ class PrebidView internal constructor(
     }
 
     // Ensure we have a loader instance bound to these IDs; recreate if IDs changed
-    private fun ensureInterstitialLoader(adUnitId: String, configId: String) {
+    private fun ensureInterstitialLoader(gamAdUnitId: String, yandexAdUnitId: String, configId: String) {
         val current = interstitialLoader
-        if (current == null || lastInterstitialAdUnitId != adUnitId || lastInterstitialConfigId != configId) {
+        if (current == null || lastInterstitialGamAdUnitId != gamAdUnitId || lastInterstitialYandexAdUnitId != yandexAdUnitId
+            || lastInterstitialConfigId != configId) {
             try {
                 current?.destroy()
             } catch (e: Exception) {
@@ -352,14 +379,16 @@ class PrebidView internal constructor(
             interstitialLoader = MultiInterstitialAdLoaderLegacyGam(
                 context = appActivity,
                 configId = configId,
-                gamAdUnitId = adUnitId
+                gamAdUnitId = gamAdUnitId,
+                yandexAdUnitId = yandexAdUnitId
             )
         }
     }
 
     // Ensure we have a loader instance bound to these IDs; recreate if IDs changed
     private fun ensureBannerLoader(
-        adUnitId: String,
+        gamAdUnitId: String,
+        yandexAdUnitId: String,
         configId: String,
         width: Int,
         height: Int,
@@ -367,26 +396,27 @@ class PrebidView internal constructor(
     ) {
         val refresh = refreshInterval ?: 30
         val current = bannerLoader
-        if (current == null || lastBannerAdUnitId != adUnitId || lastBannerConfigId != configId) {
+        if (current == null || lastBannerGamAdUnitId != gamAdUnitId || lastBannerYandexAdUnitId != yandexAdUnitId || lastBannerConfigId != configId) {
             try {
                 current?.destroy()
                 bannerLoader = MultiBannerLoaderLegacyGam(
                     context = applicationContext,
                     adSize = AdSize(width, height),
                     configId = configId,
-                    gamAdUnitId = adUnitId,
+                    gamAdUnitId = gamAdUnitId,
+                    yandexAdUnitId = yandexAdUnitId,
                     autoRefreshDelay = refresh
                 )
 
                 bannerLoader?.setListener(object : MultiBannerViewListener {
                     override fun onAdLoaded(view: View, sdk: SdkType) {
                         adView = view
-                        val id = getAdId(sdk, configId, adUnitId)
+                        val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
                         channel.invokeMethod("onAdLoaded", id);
                         Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name} (not auto-showing)")
                     }
 
-                    override fun onAdFailed(bannerView: BannerView?, error: String?, sdk: SdkType?) {
+                    override fun onAdFailed(error: String?, sdk: SdkType?) {
                         val errorMsg = error ?: "Unknown error"
                         val sdkName = sdk?.name ?: "unknown SDK"
                         channel.invokeMethod("onAdFailed", errorMsg)
@@ -394,30 +424,40 @@ class PrebidView internal constructor(
                     }
 
                     override fun onAdClicked(bannerView: BannerView?, sdk: SdkType) {
-                        val id = getAdId(sdk, configId, adUnitId)
+                        val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
                         channel.invokeMethod("onAdClicked", id)
                         Log.d(Tag, "onAdClicked: Ad clicked from ${sdk.name}")
                     }
 
                     override fun onAdClosed(bannerView: BannerView?, sdk: SdkType) {
-                        val id = getAdId(sdk, configId, adUnitId)
+                        val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
                         channel.invokeMethod("onAdClosed", id)
                         Log.d(Tag, "onAdClosed: Ad closed from ${sdk.name}")
                     }
 
                     override fun onAdDisplayed(bannerAdView: BannerView?, sdk: SdkType) {
                         bannerView = bannerAdView
-                        val id = getAdId(sdk, configId, adUnitId)
+                        val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
                         channel.invokeMethod("onAdDisplayed", id)
                         Log.d(Tag, "onAdDisplayed: Ad displayed from ${sdk.name}")
                     }
 
-                    override fun onImpression(sdk: SdkType) {
+                    override fun onImpression(impressionData: ImpressionData?, sdk: SdkType) {
+                        val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
+                        channel.invokeMethod("onImpresssion", id)
                         Log.d(Tag, "onImpression: Impression tracked from ${sdk.name}")
                     }
 
                     override fun onAdOpened(sdk: SdkType) {
                         Log.d(Tag, "onAdOpened: Ad opened from ${sdk.name}")
+                    }
+
+                    override fun onLeftApplication(sdk: SdkType) {
+                        Log.d(Tag, "onLeftApplication: Left app ${sdk.name}")
+                    }
+
+                    override fun onReturnedToApplication(sdk: SdkType) {
+                        Log.d(Tag, "onReturnedToApplication: Returned to app (${sdk.name})")
                     }
                 })
 
@@ -428,10 +468,11 @@ class PrebidView internal constructor(
         }
     }
 
-    private fun getAdId(sdk: SdkType, configId: String, adUnitId: String): String =
+    private fun getAdId(sdk: SdkType, configId: String, gamAdUnitId: String, yandexAdUnitId: String): String =
         when (sdk) {
             SdkType.PREBID -> configId
-            SdkType.GAM -> adUnitId
+            SdkType.GAM -> gamAdUnitId
+            SdkType.YANDEX -> yandexAdUnitId
             else -> "unknown_id"
         }
 

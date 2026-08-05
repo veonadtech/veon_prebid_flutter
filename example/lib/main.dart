@@ -65,7 +65,7 @@ class _MyAppState extends State<MyAppState> {
 
   @override
   void initState() {
-  super.initState();
+    super.initState();
 
     _bannerEventListener = _PrebidBannerEventListener(_controller);
     _interstitialEventListener = _PrebidInterstitialEventListener(_controller);
@@ -79,10 +79,11 @@ class _MyAppState extends State<MyAppState> {
   void _initializeAds() {
     simpleTestBanner = PrebidAd(
         adType: AdType.banner,
-        configId: '_beeline_uz_android_manual_veon_test_320x50',
-        adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_manual_veon_test_320x50',
-        width: 343,
-        height: 100,
+        configId: 'prebid-ita-banner-320-50',
+        gamAdUnitId: '/6355419/Travel/Europe/France/Paris',
+        yandexAdUnitId: 'demo-banner-yandex',
+        width: 320,
+        height: 50,
         refreshInterval: 30,
         eventListener: _bannerEventListener,
         prebidController: _controller
@@ -91,7 +92,8 @@ class _MyAppState extends State<MyAppState> {
     simpleBanner = PrebidAd(
         adType: AdType.banner,
         configId: 'prebid-ita-banner-320-50',
-        adUnitId: '/6355419/Travel/Europe/France/Paris',
+        gamAdUnitId: '/6355419/Travel/Europe/France/Paris',
+        yandexAdUnitId: 'demo-banner-yandex',
         width: 320,
         height: 50,
         refreshInterval: 30,
@@ -102,7 +104,8 @@ class _MyAppState extends State<MyAppState> {
     auctionSimpleBanner = PrebidAd(
         adType: AdType.banner,
         configId: 'prebid-ita-banner-300-50',
-        adUnitId: '/6355419/Travel/Europe/France/Paris',
+        gamAdUnitId: '/6355419/Travel/Europe/France/Paris',
+        yandexAdUnitId: 'demo-banner-yandex',
         width: 300,
         height: 50,
         refreshInterval: 30,
@@ -113,7 +116,8 @@ class _MyAppState extends State<MyAppState> {
     auctionSimpleBanner300x250 = PrebidAd(
         adType: AdType.banner,
         configId: 'prebid-ita-banner-300-250',
-        adUnitId: '/6355419/Travel/Europe/France/Paris',
+        gamAdUnitId: '/6355419/Travel/Europe/France/Paris',
+        yandexAdUnitId: 'demo-banner-yandex',
         width: 300,
         height: 250,
         refreshInterval: 30,
@@ -123,8 +127,9 @@ class _MyAppState extends State<MyAppState> {
 
     interstitial = PrebidAd(
         adType: AdType.interstitial,
-        configId: '_beeline_uz_android_wheel_test2_interstitial',
-        adUnitId: '/23081467975/beeline_uzbekistan_android/beeline_uz_android_wheel_test2_interstitial',
+        configId: 'oq_uz_android_media_interstitial',
+        gamAdUnitId: '/23081467975/oq_uzbekistan/oq_uz_android_media_interstitial',
+        yandexAdUnitId: 'demo-banner-yandex',
         width: 100,
         height: 100,
         refreshInterval: null,
@@ -135,7 +140,8 @@ class _MyAppState extends State<MyAppState> {
     rewardVideo = PrebidAd(
       adType: AdType.rewardVideo,
         configId: 'test_video_content_320x100',
-        adUnitId: '/21775744923/example/rewarded',
+        gamAdUnitId: '/21775744923/example/rewarded',
+        yandexAdUnitId: 'demo-banner-yandex',
         width: 100,
         height: 100,
         refreshInterval: null,
@@ -310,6 +316,12 @@ class _PrebidBannerEventListener implements EventListener {
     print('AAAA Ad closed: $configId');
     // Your logic
   }
+
+  @override
+  onAdImpression(String configId) {
+    print('AAAA Ad impression: $configId');
+    // Your logic
+  }
 }
 
 class _PrebidInterstitialEventListener implements EventListener {
@@ -353,6 +365,12 @@ class _PrebidInterstitialEventListener implements EventListener {
   onAdClosed(String configId) {
     print('AAAA Ad closed: $configId');
     _controller.hideInterstitial();
+    // Your logic
+  }
+
+  @override
+  onAdImpression(String configId) {
+    print('AAAA Ad impression: $configId');
     // Your logic
   }
 }

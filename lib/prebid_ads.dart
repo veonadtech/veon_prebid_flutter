@@ -66,7 +66,8 @@ class PrebidAd extends StatefulWidget {
     Key? key,
     required this.adType,
     required this.configId,
-    required this.adUnitId,
+    required this.gamAdUnitId,
+    required this.yandexAdUnitId,
     required this.width,
     required this.height,
     required this.refreshInterval,
@@ -76,7 +77,8 @@ class PrebidAd extends StatefulWidget {
 
   final AdType adType;
   final String configId;
-  final String adUnitId;
+  final String gamAdUnitId;
+  final String yandexAdUnitId;
   final int? width;
   final int? height;
   final int? refreshInterval;
@@ -158,6 +160,9 @@ class _PrebidAdState extends State<PrebidAd> {
         case "onAdClosed":
           widget.eventListener.onAdClosed(configId);
           break;
+        case "onImpression":
+          widget.eventListener.onAdImpression(configId);
+          break;
       }
     });
   }
@@ -167,7 +172,8 @@ class _PrebidAdState extends State<PrebidAd> {
     channel.invokeMethod('setParams', {
       "adType": widget.adType.name,
       "configId": widget.configId,
-      "adUnitId": widget.adUnitId,
+      "gamAdUnitId": widget.gamAdUnitId,
+      "yandexAdUnitId": widget.yandexAdUnitId,
       "height": widget.height,
       "width": widget.width,
       "refreshInterval": widget.refreshInterval,
