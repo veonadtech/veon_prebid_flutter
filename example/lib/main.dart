@@ -129,7 +129,7 @@ class _MyAppState extends State<MyAppState> {
         adType: AdType.interstitial,
         configId: 'oq_uz_android_media_interstitial',
         gamAdUnitId: '/23081467975/oq_uzbekistan/oq_uz_android_media_interstitial',
-        yandexAdUnitId: 'demo-banner-yandex',
+        yandexAdUnitId: 'demo-interstitial-yandex',
         width: 100,
         height: 100,
         refreshInterval: null,
