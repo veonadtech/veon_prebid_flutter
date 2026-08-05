@@ -1,6 +1,6 @@
 name: setupad_prebid_flutter
 description: Integrate Prebid Mobile into Flutter apps
-version: 0.6.0
+version: 0.6.2
 homepage: https://veon.com/
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
