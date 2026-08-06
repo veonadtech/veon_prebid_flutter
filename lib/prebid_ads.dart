@@ -67,7 +67,7 @@ class PrebidAd extends StatefulWidget {
     required this.adType,
     required this.configId,
     required this.gamAdUnitId,
-    required this.yandexAdUnitId,
+    this.yandexAdUnitId,
     required this.width,
     required this.height,
     required this.refreshInterval,
@@ -78,7 +78,7 @@ class PrebidAd extends StatefulWidget {
   final AdType adType;
   final String configId;
   final String gamAdUnitId;
-  final String yandexAdUnitId;
+  final String? yandexAdUnitId;
   final int? width;
   final int? height;
   final int? refreshInterval;

@@ -7,6 +7,9 @@
 * `prebid-android-sdk` bump to `0.4.3.1-yandex`, no changes in this repo)
 ## Added
 * Integration with the Yandex SDK has been implemented
+### Upgrading from < 0.6.2
+* If you were using `adUnitId`, rename it to `gamAdUnitId`. If you want to serve
+* Yandex demand as well, also pass `yandexAdUnitId`.
 
 # 0.6.1
 ### Changed
