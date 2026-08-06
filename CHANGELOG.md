@@ -3,7 +3,8 @@
 # 0.6.2-yandex
 ## Changed
 * Interstitial container size is now derived from the bid response (`bid.w`/`bid.h`) instead of
-* always filling the screen, capped so it never exceeds the display's size
+* always filling the screen, capped so it never exceeds the display's size (fix delivered via 
+* `prebid-android-sdk` bump to `0.4.3.1-yandex`, no changes in this repo)
 ## Added
 * Integration with the Yandex SDK has been implemented
 

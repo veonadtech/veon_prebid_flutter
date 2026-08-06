@@ -226,19 +226,7 @@ class PrebidView internal constructor(
 
             else -> {
                 when {
-                    gamAdUnitId == "" && yandexAdUnitId != "" && configId != "" -> { //gamAdUnitID tuscias
-                        Log.e(Tag, applicationContext.getString(R.string.emptyGamAdUnitID))
-                    }
-
-                    gamAdUnitId != "" && yandexAdUnitId != "" && configId == "" -> { //configID tuscias
-                        Log.e(Tag, applicationContext.getString(R.string.emptyConfigID))
-                    }
-
-                    gamAdUnitId != "" && yandexAdUnitId == "" && configId != "" -> { //yandexAdUnitId tuscias
-                        Log.e(Tag, applicationContext.getString(R.string.emptyYandexAdUnitID))
-                    }
-
-                    gamAdUnitId == "" && yandexAdUnitId == "" && configId == "" -> { //gam ad unit, yandex ad unit ir config ID tusti
+                    gamAdUnitId == "" && yandexAdUnitId == "" && configId == "" -> {
                         Log.e(Tag, applicationContext.getString(R.string.emptyAdUnitConfigID))
                     }
 
@@ -444,7 +432,7 @@ class PrebidView internal constructor(
 
                     override fun onImpression(impressionData: ImpressionData?, sdk: SdkType) {
                         val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
-                        channel.invokeMethod("onImpresssion", id)
+                        channel.invokeMethod("onImpression", id)
                         Log.d(Tag, "onImpression: Impression tracked from ${sdk.name}")
                     }
 

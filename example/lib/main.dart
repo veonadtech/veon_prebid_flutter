@@ -141,7 +141,6 @@ class _MyAppState extends State<MyAppState> {
       adType: AdType.rewardVideo,
         configId: 'test_video_content_320x100',
         gamAdUnitId: '/21775744923/example/rewarded',
-        yandexAdUnitId: 'demo-banner-yandex',
         width: 100,
         height: 100,
         refreshInterval: null,
