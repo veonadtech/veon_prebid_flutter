@@ -208,7 +208,7 @@ class PrebidBannerView: NSObject {
     // MARK: - Logging
 
     private func logAdParameters(_ params: AdParameters) {
-        NSLog("LOG: adUnit: \(params.adUnitId)")
+        NSLog("LOG: gamAdUnit: \(params.gamAdUnitId)")
         NSLog("LOG: configId: \(params.configId)")
         NSLog("LOG: adHeight: \(params.height)")
         NSLog("LOG: adWidth: \(params.width)")
@@ -237,7 +237,7 @@ class PrebidBannerView: NSObject {
 
         // Create a GAMBannerView
         gamBanner = AdManagerBannerView(adSize: adSizeFor(cgSize: adSize))
-        gamBanner?.adUnitID = params.adUnitId
+        gamBanner?.adUnitID = params.gamAdUnitId
         gamBanner?.delegate = self
 
         // Make a bid request to Prebid Server
@@ -272,7 +272,7 @@ class PrebidBannerView: NSObject {
     }
 
     private func loadInterstitialRendering(params: AdParameters) {
-        let eventHandler = GAMInterstitialEventHandler(adUnitID: params.adUnitId)
+        let eventHandler = GAMInterstitialEventHandler(adUnitID: params.gamAdUnitId)
         let size = CGSize(width: Int(params.width), height: Int(params.height))
         prebidInterstitial = InterstitialRenderingAdUnit(
             configID: params.configId,
@@ -284,7 +284,7 @@ class PrebidBannerView: NSObject {
     }
 
     private func loadRewardVideo(params: AdParameters) {
-        let eventHandler = GAMRewardedAdEventHandler(adUnitID: params.adUnitId)
+        let eventHandler = GAMRewardedAdEventHandler(adUnitID: params.gamAdUnitId)
         rewardedAdUnit = RewardedAdUnit(configID: params.configId, eventHandler: eventHandler)
         rewardedAdUnit?.delegate = self
         rewardedAdUnit?.loadAd()
@@ -467,7 +467,7 @@ extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
 /// Struct to encapsulate ad parameters from Flutter
 private struct AdParameters {
 
-    let adUnitId: String
+    let gamAdUnitId: String
     let configId: String
     let width: Double
     let height: Double
@@ -475,7 +475,7 @@ private struct AdParameters {
     let refreshInterval: Double
 
     init(from dictionary: [String: Any]) {
-        adUnitId = dictionary["adUnitId"] as? String ?? ""
+        gamAdUnitId = dictionary["gamAdUnitId"] as? String ?? ""
         configId = dictionary["configId"] as? String ?? ""
         height = dictionary["height"] as? Double ?? 0
         width = dictionary["width"] as? Double ?? 0
