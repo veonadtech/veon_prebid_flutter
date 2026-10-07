@@ -1,0 +1,3 @@
+# Владельцы кода: назначаются ревьюерами автоматически, merge требует одобрения одного из них.
+# Группы см. github-setup/rollout.py (OWNERS).
+* @SitoGitHub @iPOiZN @wwoland
