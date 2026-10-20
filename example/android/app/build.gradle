@@ -30,9 +30,9 @@ if (flutterVersionName == null) {
 android {
     namespace "setupad.plugin.setupad_prebid_flutter_example"
     compileSdkVersion flutter.compileSdkVersion
-//    ndkVersion flutter.ndkVersion
+    ndkVersion "28.2.13676358"
 
-    compileSdkVersion 35
+    compileSdk 35
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
