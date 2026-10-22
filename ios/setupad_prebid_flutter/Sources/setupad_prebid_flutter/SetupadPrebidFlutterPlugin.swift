@@ -1,6 +1,10 @@
 import Flutter
 import GoogleMobileAds
 import PrebidMobile
+import VeonPrebidRemoteConfig
+import VeonPrebidMultiAdLoaderGAM
+import VeonPrebidMultiAdLoaderYandex
+import YandexMobileAds
 
 @objc(SetupadPrebidFlutterPlugin)
 public class SetupadPrebidFlutterPlugin: NSObject {
@@ -21,29 +25,38 @@ public class SetupadPrebidFlutterPlugin: NSObject {
         }
 
         let serverHost = arguments["prebidHost"] as? String ?? ""
+        let configHost = arguments["configHost"] as? String ?? ""
         let accountId = arguments["accountID"] as? String ?? ""
         let timeoutMills = arguments["timeoutMillis"] as? Int ?? 30000
 
-        NSLog("LOG: init iOS SDK")
-        NSLog("LOG: host: \(serverHost)")
-        NSLog("LOG: accountId: \(accountId)")
-        NSLog("LOG: timeoutMills: \(timeoutMills)")
+        NSLog("[Prebid iOS] Initializing: server=\(serverHost), config=\(configHost.isEmpty ? "<empty>" : configHost), account=\(accountId), timeoutMs=\(timeoutMills)")
 
         Prebid.shared.prebidServerAccountId = accountId
         Prebid.shared.timeoutMillis = timeoutMills
         Prebid.shared.logLevel = .debug
 
-        do {
-            try Prebid.initializeSDK(
-                serverURL: serverHost,
-                gadMobileAdsVersion: string(for: MobileAds.shared.versionNumber)
-            ) { status, error in
-                self.handlePrebidInitializationResult(status: status, error: error)
-                result(nil) // Return success
+        MobileAds.shared.start()
+        VeonGAMAdSourceProvider.register()
+        NSLog("[Prebid iOS] GAM source registered; initializing Yandex SDK")
+        YandexAds.initializeSDK {
+            DispatchQueue.main.async {
+                VeonYandexAdSourceProvider.register()
+                NSLog("[Prebid iOS] Yandex SDK initialized and source registered")
+                do {
+                    try Prebid.initializeSDK(
+                        serverURL: serverHost,
+                        configURL: configHost,
+                        gadMobileAdsVersion: string(for: MobileAds.shared.versionNumber)
+                    ) { status, error in
+                        self.handlePrebidInitializationResult(status: status, error: error)
+                        NSLog("[Prebid iOS] SDK initialization completed; configLoaded=\(SdkConfigStore.config != nil), sourceOrder=\(SdkConfigStore.priorityOrder.map { String(describing: $0) }.joined(separator: ","))")
+                        result(nil)
+                    }
+                } catch {
+                    NSLog("LOG: ERROR initializing Prebid SDK: \(error.localizedDescription)")
+                    result(FlutterError(code: "INIT_ERROR", message: "Failed to initialize Prebid SDK", details: error.localizedDescription))
+                }
             }
-        } catch {
-            NSLog("LOG: ERROR initializing Prebid SDK: \(error.localizedDescription)")
-            result(FlutterError(code: "INIT_ERROR", message: "Failed to initialize Prebid SDK", details: error.localizedDescription))
         }
     }
 

@@ -11,7 +11,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   const PrebidMobile().initializeSDK(
       "https://prebid.veonadx.com/openrtb2/auction",
-      "https://dcdn.veonadx.com/sdk/uz.beeline.odp/config.json",
+      "https://dcdn.kazdsp.com/sdk/kz.beeline.odp/config.json",
       "test",
       30000,
       true,
@@ -127,8 +127,8 @@ class _MyAppState extends State<MyAppState> {
 
     interstitial = PrebidAd(
         adType: AdType.interstitial,
-        configId: 'oq_uz_android_media_interstitial',
-        gamAdUnitId: '/23081467975/oq_uzbekistan/oq_uz_android_media_interstitial',
+        configId: 'prebid-demo-display-interstitial-320-480',
+        gamAdUnitId: '/21775744923/example/interstitial',
         yandexAdUnitId: 'demo-interstitial-yandex',
         width: 100,
         height: 100,

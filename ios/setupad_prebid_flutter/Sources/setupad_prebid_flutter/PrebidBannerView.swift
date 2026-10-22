@@ -2,6 +2,8 @@ import AppTrackingTransparency
 import Flutter
 import GoogleMobileAds
 import PrebidMobile
+import VeonPrebidMultiAdLoader
+import VeonPrebidRemoteConfig
 #if canImport(VeonPrebidMobileGAMEventHandlers)
 import VeonPrebidMobileGAMEventHandlers
 #else
@@ -22,9 +24,17 @@ class PrebidBannerView: NSObject {
 
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
+    private let viewId: Int64
 
     /// Prebid interstitial rendering ad unit
     private var prebidInterstitial: InterstitialRenderingAdUnit?
+    private var multiBannerLoader: VeonMultiBannerAdLoader?
+    private var multiInterstitialLoader: VeonMultiInterstitialAdLoader?
+    private var multiBannerView: UIView?
+    private var multiBannerSdk: SdkType?
+    private var isBannerVisible = false
+    private var lastBannerError: String?
+    private var lastInterstitialError: String?
 
     // Prebid reward ad unit
     private var rewardedAdUnit: RewardedAdUnit?
@@ -61,8 +71,9 @@ class PrebidBannerView: NSObject {
 
     init(frame: CGRect, viewIdentifier viewId: Int64, messenger: FlutterBinaryMessenger) {
         container = UIView(frame: frame)
+        self.viewId = viewId
         channel = FlutterMethodChannel(
-            name: "setupad.plugin.setupad_prebid_flutter/ios",
+            name: "setupad.plugin.setupad_prebid_flutter/ios_\(viewId)",
             binaryMessenger: messenger
         )
 
@@ -77,6 +88,11 @@ class PrebidBannerView: NSObject {
     // MARK: - Deinit
 
     deinit {
+        channel.setMethodCallHandler(nil)
+        multiBannerLoader?.delegate = nil
+        multiBannerLoader?.destroy()
+        multiInterstitialLoader?.delegate = nil
+        multiInterstitialLoader?.destroy()
         prebidBannerView?.delegate = nil
         prebidBannerView = nil
         gamBanner?.delegate = nil
@@ -131,9 +147,9 @@ class PrebidBannerView: NSObject {
 
         switch adParams.adType {
         case AdType.banner:
-            loadGamBanner(params: adParams)
+            loadBanner(params: adParams)
         case AdType.interstitial:
-            loadInterstitialRendering(params: adParams)
+            loadInterstitial(params: adParams)
         case AdType.rewardVideo:
             loadRewardVideo(params: adParams)
         default:
@@ -154,11 +170,16 @@ class PrebidBannerView: NSObject {
         guard let adParams else {
             return result(nil)
         }
-        loadGamBanner(params: adParams)
+        loadBanner(params: adParams)
         result(nil)
     }
 
     private func handleShowBanner(result: @escaping FlutterResult) {
+        isBannerVisible = true
+        log("showBanner: loaded=\(multiBannerView != nil), winner=\(multiBannerSdk.map { String(describing: $0) } ?? "none")")
+        if let multiBannerView {
+            addMultiBannerViewToView(multiBannerView)
+        }
         if let gamBanner {
             addGamBannerViewToView(gamBanner)
         }
@@ -170,6 +191,13 @@ class PrebidBannerView: NSObject {
     }
 
     private func handleHideBanner(result: @escaping FlutterResult) {
+        isBannerVisible = false
+        multiBannerView?.removeFromSuperview()
+        multiBannerView = nil
+        multiBannerSdk = nil
+        multiBannerLoader?.delegate = nil
+        multiBannerLoader?.destroy()
+        multiBannerLoader = nil
         prebidBannerView?.removeFromSuperview()
         gamBanner?.removeFromSuperview()
         prebidBannerView?.delegate = nil
@@ -184,11 +212,16 @@ class PrebidBannerView: NSObject {
         guard let adParams else {
             return result(nil)
         }
-        loadInterstitialRendering(params: adParams)
+        loadInterstitial(params: adParams)
         result(nil)
     }
 
     private func handleShowInterstitial(result: @escaping FlutterResult) {
+        if let multiInterstitialLoader {
+            log("showInterstitial: ready=\(multiInterstitialLoader.isReady)")
+            let rootViewController = getRootViewController()
+            multiInterstitialLoader.show(from: rootViewController.presentedViewController ?? rootViewController)
+        }
         if let prebidInterstitial {
             let rootViewController = getRootViewController()
             let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
@@ -199,6 +232,9 @@ class PrebidBannerView: NSObject {
     }
 
     private func handleHideInterstitial(result: @escaping FlutterResult) {
+        multiInterstitialLoader?.delegate = nil
+        multiInterstitialLoader?.destroy()
+        multiInterstitialLoader = nil
         prebidInterstitial?.delegate = nil
         prebidInterstitial = nil
 
@@ -208,14 +244,93 @@ class PrebidBannerView: NSObject {
     // MARK: - Logging
 
     private func logAdParameters(_ params: AdParameters) {
-        NSLog("LOG: gamAdUnit: \(params.gamAdUnitId)")
-        NSLog("LOG: configId: \(params.configId)")
-        NSLog("LOG: adHeight: \(params.height)")
-        NSLog("LOG: adWidth: \(params.width)")
-        NSLog("LOG: adType: \(params.adType)")
+        log("setParams: type=\(params.adType), size=\(params.width)x\(params.height), refresh=\(params.refreshInterval), prebid=\(params.configId), gam=\(params.gamAdUnitId), yandex=\(params.yandexAdUnitId.isEmpty ? "<empty>" : params.yandexAdUnitId)")
+    }
+
+    private func log(_ message: String) {
+        NSLog("[Prebid iOS view=\(viewId)] \(message)")
+    }
+
+    private func errorDetails(_ error: Error?) -> String {
+        guard let error else { return "<no error provided>" }
+        let nsError = error as NSError
+        return "domain=\(nsError.domain), code=\(nsError.code), description=\(nsError.localizedDescription)"
+    }
+
+    private func logSourceOrder(for format: String) {
+        let order = SdkConfigStore.priorityOrder.map { String(describing: $0) }.joined(separator: ",")
+        log("load \(format): configLoaded=\(SdkConfigStore.config != nil), sourceOrder=\(order), yandexInOrder=\(SdkConfigStore.priorityOrder.contains(.yandex))")
     }
 
     // MARK: - Ad Loading Methods
+
+    private func loadBanner(params: AdParameters) {
+        guard !params.yandexAdUnitId.isEmpty else {
+            log("load banner: Yandex ID empty; using GAM path")
+            loadGamBanner(params: params)
+            return
+        }
+        logSourceOrder(for: "banner")
+        multiBannerLoader?.delegate = nil
+        multiBannerLoader?.destroy()
+        multiBannerView?.removeFromSuperview()
+        multiBannerView = nil
+        multiBannerSdk = nil
+        lastBannerError = nil
+        let loader = VeonMultiBannerAdLoader(
+            rootViewController: getRootViewController(),
+            adSize: CGSize(width: params.width, height: params.height),
+            refreshInterval: params.refreshInterval,
+            configId: params.configId,
+            gamAdUnitId: params.gamAdUnitId,
+            yandexAdUnitId: params.yandexAdUnitId
+        )
+        multiBannerLoader = loader
+        loader.delegate = self
+        Task { @MainActor [weak self, weak loader] in
+            guard let self, let loader, loader === self.multiBannerLoader else { return }
+            self.log("starting multi banner loader")
+            loader.loadAd()
+        }
+    }
+
+    private func loadInterstitial(params: AdParameters) {
+        guard !params.yandexAdUnitId.isEmpty else {
+            log("load interstitial: Yandex ID empty; using GAM path")
+            loadInterstitialRendering(params: params)
+            return
+        }
+        logSourceOrder(for: "interstitial")
+        multiInterstitialLoader?.delegate = nil
+        multiInterstitialLoader?.destroy()
+        lastInterstitialError = nil
+        let loader = VeonMultiInterstitialAdLoader(
+            configId: params.configId,
+            gamAdUnitId: params.gamAdUnitId,
+            yandexAdUnitId: params.yandexAdUnitId
+        )
+        multiInterstitialLoader = loader
+        loader.delegate = self
+        Task { @MainActor [weak self, weak loader] in
+            guard let self, let loader, loader === self.multiInterstitialLoader else { return }
+            self.log("starting multi interstitial loader")
+            loader.loadAd()
+        }
+    }
+
+    private func addMultiBannerViewToView(_ bannerView: UIView) {
+        guard bannerView.superview !== container else { return }
+        bannerView.removeFromSuperview()
+        bannerView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(bannerView)
+        NSLayoutConstraint.activate([
+            bannerView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+        if let multiBannerSdk {
+            channel.invokeMethod("onAdDisplayed", arguments: adId(for: multiBannerSdk))
+        }
+    }
 
     private func loadGamBanner(params: AdParameters) {
         adSize = CGSize(width: Int(params.width), height: Int(params.height))
@@ -319,6 +434,102 @@ class PrebidBannerView: NSObject {
         ])
     }
 
+}
+
+// MARK: - Multi-ad loader delegates
+
+extension PrebidBannerView: VeonMultiBannerAdLoaderDelegate {
+    func bannerLoader(_ loader: VeonMultiBannerAdLoader, didLoad view: UIView, from sdk: SdkType) {
+        guard loader === multiBannerLoader else { return }
+        log("banner loaded: source=\(sdk), adUnit=\(adId(for: sdk)), visible=\(isBannerVisible)")
+        multiBannerView?.removeFromSuperview()
+        multiBannerView = view
+        multiBannerSdk = sdk
+        channel.invokeMethod("onAdLoaded", arguments: adId(for: sdk))
+        if isBannerVisible { addMultiBannerViewToView(view) }
+    }
+
+    func bannerLoader(_ loader: VeonMultiBannerAdLoader, didFailToLoad sdk: SdkType, error: Error?) {
+        guard loader === multiBannerLoader else { return }
+        log("banner failed: source=\(sdk), adUnit=\(adId(for: sdk)), \(errorDetails(error))")
+        lastBannerError = error?.localizedDescription
+    }
+
+    func bannerLoaderDidFailAll(_ loader: VeonMultiBannerAdLoader) {
+        guard loader === multiBannerLoader else { return }
+        log("all banner sources failed; lastError=\(lastBannerError ?? "none")")
+        channel.invokeMethod("onAdFailed", arguments: lastBannerError ?? "All banner sources failed")
+    }
+
+    func bannerLoader(_ loader: VeonMultiBannerAdLoader, didRecordImpressionFrom sdk: SdkType) {
+        guard loader === multiBannerLoader else { return }
+        channel.invokeMethod("onImpression", arguments: adId(for: sdk))
+    }
+
+    func bannerLoader(_ loader: VeonMultiBannerAdLoader, didRecordClickFrom sdk: SdkType) {
+        guard loader === multiBannerLoader else { return }
+        channel.invokeMethod("onAdClicked", arguments: adId(for: sdk))
+    }
+
+    func bannerLoader(_ loader: VeonMultiBannerAdLoader, didDismissScreenFrom sdk: SdkType) {
+        guard loader === multiBannerLoader else { return }
+        channel.invokeMethod("onAdClosed", arguments: adId(for: sdk))
+    }
+
+    private func adId(for sdk: SdkType) -> String {
+        guard let adParams else { return "" }
+        switch sdk {
+        case .prebid: return adParams.configId
+        case .gam: return adParams.gamAdUnitId
+        case .yandex: return adParams.yandexAdUnitId
+        }
+    }
+}
+
+extension PrebidBannerView: VeonMultiInterstitialAdLoaderDelegate {
+    func interstitialLoader(_ loader: VeonMultiInterstitialAdLoader, didLoadFrom sdk: SdkType) {
+        guard loader === multiInterstitialLoader else { return }
+        log("interstitial loaded: source=\(sdk), adUnit=\(adId(for: sdk))")
+        channel.invokeMethod("onAdLoaded", arguments: adId(for: sdk))
+    }
+
+    func interstitialLoader(_ loader: VeonMultiInterstitialAdLoader, didFailToLoad sdk: SdkType, error: Error?) {
+        guard loader === multiInterstitialLoader else { return }
+        log("interstitial failed: source=\(sdk), adUnit=\(adId(for: sdk)), \(errorDetails(error))")
+        lastInterstitialError = error?.localizedDescription
+    }
+
+    func interstitialLoaderDidFailAll(_ loader: VeonMultiInterstitialAdLoader) {
+        guard loader === multiInterstitialLoader else { return }
+        log("all interstitial sources failed; lastError=\(lastInterstitialError ?? "none")")
+        channel.invokeMethod("onAdFailed", arguments: lastInterstitialError ?? "All interstitial sources failed")
+    }
+
+    func interstitialLoader(_ loader: VeonMultiInterstitialAdLoader, willPresent sdk: SdkType) {
+        guard loader === multiInterstitialLoader else { return }
+        channel.invokeMethod("onAdDisplayed", arguments: adId(for: sdk))
+    }
+
+    func interstitialLoader(_ loader: VeonMultiInterstitialAdLoader, didDismiss sdk: SdkType) {
+        guard loader === multiInterstitialLoader else { return }
+        channel.invokeMethod("onAdClosed", arguments: adId(for: sdk))
+    }
+
+    func interstitialLoader(_ loader: VeonMultiInterstitialAdLoader, didClick sdk: SdkType) {
+        guard loader === multiInterstitialLoader else { return }
+        channel.invokeMethod("onAdClicked", arguments: adId(for: sdk))
+    }
+
+    func interstitialLoader(_ loader: VeonMultiInterstitialAdLoader, didFailToShow sdk: SdkType, error: Error?) {
+        guard loader === multiInterstitialLoader else { return }
+        log("interstitial show failed: source=\(sdk), \(errorDetails(error))")
+        channel.invokeMethod("onAdFailed", arguments: error?.localizedDescription ?? "Interstitial failed to show")
+    }
+
+    func interstitialLoader(_ loader: VeonMultiInterstitialAdLoader, didTrackImpression sdk: SdkType) {
+        guard loader === multiInterstitialLoader else { return }
+        channel.invokeMethod("onImpression", arguments: adId(for: sdk))
+    }
 }
 
 // MARK: - FlutterPlatformView
@@ -468,6 +679,7 @@ extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
 private struct AdParameters {
 
     let gamAdUnitId: String
+    let yandexAdUnitId: String
     let configId: String
     let width: Double
     let height: Double
@@ -476,6 +688,7 @@ private struct AdParameters {
 
     init(from dictionary: [String: Any]) {
         gamAdUnitId = dictionary["gamAdUnitId"] as? String ?? ""
+        yandexAdUnitId = dictionary["yandexAdUnitId"] as? String ?? ""
         configId = dictionary["configId"] as? String ?? ""
         height = dictionary["height"] as? Double ?? 0
         width = dictionary["width"] as? Double ?? 0

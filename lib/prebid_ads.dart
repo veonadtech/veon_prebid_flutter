@@ -129,11 +129,8 @@ class _PrebidAdState extends State<PrebidAd> {
     _sendParams(channel);
   }
 
-  /// iOS: if your iOS side uses a per-view channel, replace with that.
   void _oniOSViewCreated(int id) {
-    // If iOS uses per-view channels, mirror Android naming with id.
-    // If your native iOS implementation uses a single channel, keep as below.
-    final channel = const MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
+    final channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios_$id');
     _wireChannel(channel);
     _sendParams(channel);
   }

@@ -39,6 +39,7 @@ class PrebidMobile {
       return channel.invokeMethod('startPrebid', {
         "accountID": prebidAccountID,
         "prebidHost": prebidHost,
+        "configHost": configHost,
         "timeoutMillis": timeoutMillis,
         "pbsDebug": pbsDebug
       });
