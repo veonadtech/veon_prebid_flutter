@@ -36,7 +36,8 @@
 * Remove legacy Travis CI setup
 * fit the corrective WebView scale inside both axes and retry on layout
 
-## Integration with the Yandex SDK has been implemented in iOS
+## iOS SDK version upgraded to 0.5.2
+* Yandex integration (waterfall with SDK priority list)
 
 # 0.6.2-yandex
 ## Changed
