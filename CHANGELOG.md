@@ -1,7 +1,7 @@
 # CHANGELOG
 
 # 0.7.0
-## Android version upgraded to 0.5.0
+## Android SDK version upgraded to 0.5.0
 ### Added
 * Handle Prebid Server bid caching failures gracefully
 * Expire ads respectively to the seatbid.bid.exp
@@ -35,6 +35,9 @@
 * Bumps version to 3.4.0 by @mdanylov-sigma
 * Remove legacy Travis CI setup
 * fit the corrective WebView scale inside both axes and retry on layout
+
+## iOS SDK version upgraded to 0.5.2
+* Yandex integration (waterfall with SDK priority list)
 
 # 0.6.2
 ## Changed
