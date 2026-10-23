@@ -73,6 +73,7 @@ class PrebidAd extends StatefulWidget {
     required this.refreshInterval,
     required this.eventListener,
     required this.prebidController,
+    this.onUserEarnedReward,
   }) : super(key: key);
 
   final AdType adType;
@@ -84,6 +85,7 @@ class PrebidAd extends StatefulWidget {
   final int? refreshInterval;
   final EventListener eventListener;
   final PrebidController prebidController;
+  final void Function(String adId)? onUserEarnedReward;
 
   @override
   State<PrebidAd> createState() => _PrebidAdState();
@@ -159,6 +161,9 @@ class _PrebidAdState extends State<PrebidAd> {
           break;
         case "onImpression":
           widget.eventListener.onAdImpression(configId);
+          break;
+        case "onUserEarnedReward":
+          widget.onUserEarnedReward?.call(configId);
           break;
       }
     });

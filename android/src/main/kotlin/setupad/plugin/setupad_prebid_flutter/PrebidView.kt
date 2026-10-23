@@ -78,6 +78,8 @@ class PrebidView internal constructor(
     private var bannerLoader: MultiBannerLoaderLegacyGam? = null
     private var activeBannerConfig: BannerLoaderConfig? = null
     private var adView: View? = null
+    private var isBannerVisible = false
+    private var rewardedAdUnit: RewardedAdUnit? = null
 
     // Keep last used IDs and size so "loadBanner" works even if called later
     private var lastBannerConfigId: String? = null
@@ -194,11 +196,8 @@ class PrebidView internal constructor(
                 result.success(null)
             }
             "showBanner" -> {
-                if (adView != null) {
-                    bannerLayout?.addView(adView)
-                } else {
-                    Log.w(Tag, "showBanner: adView is null")
-                }
+                isBannerVisible = true
+                showLoadedBanner()
                 result.success(null)
             }
             "hideBanner" -> {
@@ -427,6 +426,7 @@ class PrebidView internal constructor(
                         adView = view
                         val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
                         channel.invokeMethod("onAdLoaded", id);
+                        if (isBannerVisible) showLoadedBanner()
                         Log.d(Tag, "onAdLoaded: Ad loaded from ${sdk.name} (not auto-showing)")
                     }
 
@@ -484,13 +484,17 @@ class PrebidView internal constructor(
 
     private fun createRewardVideo(AD_UNIT_ID: String, CONFIG_ID: String) {
         Log.d(Tag, "Prebid reward video: $CONFIG_ID/$AD_UNIT_ID")
+        rewardedAdUnit?.destroy()
         val eventHandler = GamRewardedEventHandler(appActivity, AD_UNIT_ID)
-        RewardedAdUnit(applicationContext, CONFIG_ID, eventHandler).apply {
+        val unit = RewardedAdUnit(applicationContext, CONFIG_ID, eventHandler)
+        rewardedAdUnit = unit
+        unit.apply {
             setRewardedAdUnitListener(object : RewardedAdUnitListener {
                 override fun onAdLoaded(unit: RewardedAdUnit?) {
-                    if ((bidResponse.winningBid?.price ?: 0.0) > 0.5) show()
+                    if (unit == null || unit !== rewardedAdUnit) return
                     Log.d(Tag, "onAdLoaded:")
-                    channel.invokeMethod("onAdLoaded", CONFIG_ID);
+                    channel.invokeMethod("onAdLoaded", CONFIG_ID)
+                    if (unit.isLoaded) unit.show()
                 }
 
                 override fun onAdDisplayed(p0: RewardedAdUnit?) {
@@ -562,9 +566,12 @@ class PrebidView internal constructor(
     private fun onDestroy() {
         destroyBannerView()
         destroyInterstitialLoader()
+        rewardedAdUnit?.destroy()
+        rewardedAdUnit = null
     }
 
     private fun destroyBannerView() {
+        isBannerVisible = false
         try {
             bannerLayout?.removeAllViews()
             bannerView?.destroy()
@@ -577,6 +584,14 @@ class PrebidView internal constructor(
             activeBannerConfig = null
             adView = null
         }
+    }
+
+    private fun showLoadedBanner() {
+        val view = adView ?: return
+        val layout = bannerLayout ?: return
+        if (view.parent === layout) return
+        (view.parent as? ViewGroup)?.removeView(view)
+        layout.addView(view)
     }
 
     private fun destroyInterstitialLoader() {

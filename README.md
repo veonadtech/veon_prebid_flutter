@@ -181,7 +181,7 @@ late final bannerAd = PrebidAd(
 // bannerController.loadBanner();
 ```
 
-On Android, the banner refresh interval must be from 30 to 120 seconds.
+On Android and iOS, the banner refresh interval must be from 30 to 120 seconds.
 
 ### Interstitial
 
@@ -208,3 +208,5 @@ late final interstitialAd = PrebidAd(
 ```
 
 Use real IDs configured for each source. A Yandex test ad unit ID alone does not make an invalid Prebid config ID or GAM ad unit ID work. Check the native logs (`[Prebid iOS]` on iOS) for the result from each source.
+
+For `AdType.rewardVideo`, pass `onUserEarnedReward: (adId) { ... }` to `PrebidAd` to receive the reward event on either platform. The callback receives the Prebid config ID.

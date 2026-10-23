@@ -1,6 +1,5 @@
 import AppTrackingTransparency
 import Flutter
-import GoogleMobileAds
 import PrebidMobile
 import VeonPrebidMultiAdLoader
 import VeonPrebidRemoteConfig
@@ -17,17 +16,10 @@ class PrebidBannerView: NSObject {
     /// Container view that holds ad views
     private var container: UIView
 
-    private var gamBanner: AdManagerBannerView?
-
-    /// Prebid banner view
-    private var prebidBannerView: PrebidMobile.BannerView?
-
     /// Communication channel with Flutter
     private let channel: FlutterMethodChannel
     private let viewId: Int64
 
-    /// Prebid interstitial rendering ad unit
-    private var prebidInterstitial: InterstitialRenderingAdUnit?
     private var multiBannerLoader: VeonMultiBannerAdLoader?
     private var multiInterstitialLoader: VeonMultiInterstitialAdLoader?
     private var multiBannerView: UIView?
@@ -40,27 +32,25 @@ class PrebidBannerView: NSObject {
     private var rewardedAdUnit: RewardedAdUnit?
 
     private var adParams: AdParameters?
-    private var adSize: CGSize?
     private var configId: String?
-    private var refreshInterval: Double?
 
     // MARK: - Constants
 
     private enum AdType {
         static let banner = "banner"
         static let interstitial = "interstitial"
-        static let rewardVideo = "rewardVideo"
+        static let rewardVideo = "rewardvideo"
     }
 
     private enum MethodNames {
         static let setParams = "setParams"
-        static let demandFetched = "demandFetched"
         static let loadBanner = "loadBanner"
         static let showBanner = "showBanner"
         static let hideBanner = "hideBanner"
         static let loadInterstitial = "loadInterstitial"
         static let showInterstitial = "showInterstitial"
         static let hideInterstitial = "hideInterstitial"
+        static let destroyAuction = "destroyAuction"
     }
 
     private enum ErrorCodes {
@@ -93,12 +83,6 @@ class PrebidBannerView: NSObject {
         multiBannerLoader?.destroy()
         multiInterstitialLoader?.delegate = nil
         multiInterstitialLoader?.destroy()
-        prebidBannerView?.delegate = nil
-        prebidBannerView = nil
-        gamBanner?.delegate = nil
-        gamBanner = nil
-        prebidInterstitial?.delegate = nil
-        prebidInterstitial = nil
         rewardedAdUnit?.delegate = nil
         rewardedAdUnit = nil
         adParams = nil
@@ -122,6 +106,9 @@ class PrebidBannerView: NSObject {
             handleShowInterstitial(result: result)
         case MethodNames.hideInterstitial:
             handleHideInterstitial(result: result)
+        case MethodNames.destroyAuction:
+            destroyAuction()
+            result(nil)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -140,23 +127,38 @@ class PrebidBannerView: NSObject {
             return
         }
 
-        adParams = AdParameters(from: arguments)
-        guard let adParams else { return }
-        logAdParameters(adParams)
-        configId = adParams.configId
+        let params = AdParameters(from: arguments)
+        logAdParameters(params)
+        let adType = params.adType.lowercased()
 
-        switch adParams.adType {
+        guard !params.gamAdUnitId.isEmpty || !params.yandexAdUnitId.isEmpty || !params.configId.isEmpty else {
+            log("setParams: GAM, Yandex and Prebid IDs are empty")
+            result(nil)
+            return
+        }
+        if adType == AdType.banner && !(30...120).contains(params.refreshInterval) {
+            log("setParams: banner refreshInterval must be between 30 and 120 seconds")
+            result(nil)
+            return
+        }
+        adParams = params
+        configId = params.configId
+
+        switch adType {
         case AdType.banner:
-            loadBanner(params: adParams)
+            container.isHidden = false
+            loadBanner(params: params)
         case AdType.interstitial:
-            loadInterstitial(params: adParams)
+            container.isHidden = true
+            loadInterstitial(params: params)
         case AdType.rewardVideo:
-            loadRewardVideo(params: adParams)
+            container.isHidden = true
+            loadRewardVideo(params: params)
         default:
             result(
                 FlutterError(
                     code: ErrorCodes.loadParameters,
-                    message: "Unknown ad type: \(adParams.adType)",
+                    message: "Unknown ad type: \(params.adType)",
                     details: arguments
                 )
             )
@@ -180,31 +182,12 @@ class PrebidBannerView: NSObject {
         if let multiBannerView {
             addMultiBannerViewToView(multiBannerView)
         }
-        if let gamBanner {
-            addGamBannerViewToView(gamBanner)
-        }
-        if let prebidBannerView {
-            addPrebidBannerViewToView(prebidBannerView)
-        }
 
         result(nil)
     }
 
     private func handleHideBanner(result: @escaping FlutterResult) {
-        isBannerVisible = false
-        multiBannerView?.removeFromSuperview()
-        multiBannerView = nil
-        multiBannerSdk = nil
-        multiBannerLoader?.delegate = nil
-        multiBannerLoader?.destroy()
-        multiBannerLoader = nil
-        prebidBannerView?.removeFromSuperview()
-        gamBanner?.removeFromSuperview()
-        prebidBannerView?.delegate = nil
-        prebidBannerView = nil
-        gamBanner?.delegate = nil
-        gamBanner = nil
-
+        destroyBanner()
         result(nil)
     }
 
@@ -222,23 +205,36 @@ class PrebidBannerView: NSObject {
             let rootViewController = getRootViewController()
             multiInterstitialLoader.show(from: rootViewController.presentedViewController ?? rootViewController)
         }
-        if let prebidInterstitial {
-            let rootViewController = getRootViewController()
-            let controllerToPresent = rootViewController.presentedViewController ?? rootViewController
-            prebidInterstitial.show(from: controllerToPresent)
-        }
 
         result(nil)
     }
 
     private func handleHideInterstitial(result: @escaping FlutterResult) {
+        destroyInterstitial()
+        result(nil)
+    }
+
+    private func destroyBanner() {
+        isBannerVisible = false
+        multiBannerView?.removeFromSuperview()
+        multiBannerView = nil
+        multiBannerSdk = nil
+        multiBannerLoader?.delegate = nil
+        multiBannerLoader?.destroy()
+        multiBannerLoader = nil
+    }
+
+    private func destroyInterstitial() {
         multiInterstitialLoader?.delegate = nil
         multiInterstitialLoader?.destroy()
         multiInterstitialLoader = nil
-        prebidInterstitial?.delegate = nil
-        prebidInterstitial = nil
+    }
 
-        result(nil)
+    private func destroyAuction() {
+        destroyBanner()
+        destroyInterstitial()
+        rewardedAdUnit?.delegate = nil
+        rewardedAdUnit = nil
     }
 
     // MARK: - Logging
@@ -265,11 +261,6 @@ class PrebidBannerView: NSObject {
     // MARK: - Ad Loading Methods
 
     private func loadBanner(params: AdParameters) {
-        guard !params.yandexAdUnitId.isEmpty else {
-            log("load banner: Yandex ID empty; using GAM path")
-            loadGamBanner(params: params)
-            return
-        }
         logSourceOrder(for: "banner")
         multiBannerLoader?.delegate = nil
         multiBannerLoader?.destroy()
@@ -279,8 +270,8 @@ class PrebidBannerView: NSObject {
         lastBannerError = nil
         let loader = VeonMultiBannerAdLoader(
             rootViewController: getRootViewController(),
-            adSize: CGSize(width: params.width, height: params.height),
-            refreshInterval: params.refreshInterval,
+            adSize: CGSize(width: CGFloat(params.width), height: CGFloat(params.height)),
+            refreshInterval: Double(params.refreshInterval),
             configId: params.configId,
             gamAdUnitId: params.gamAdUnitId,
             yandexAdUnitId: params.yandexAdUnitId
@@ -295,14 +286,8 @@ class PrebidBannerView: NSObject {
     }
 
     private func loadInterstitial(params: AdParameters) {
-        guard !params.yandexAdUnitId.isEmpty else {
-            log("load interstitial: Yandex ID empty; using GAM path")
-            loadInterstitialRendering(params: params)
-            return
-        }
+        destroyInterstitial()
         logSourceOrder(for: "interstitial")
-        multiInterstitialLoader?.delegate = nil
-        multiInterstitialLoader?.destroy()
         lastInterstitialError = nil
         let loader = VeonMultiInterstitialAdLoader(
             configId: params.configId,
@@ -332,73 +317,9 @@ class PrebidBannerView: NSObject {
         }
     }
 
-    private func loadGamBanner(params: AdParameters) {
-        adSize = CGSize(width: Int(params.width), height: Int(params.height))
-        configId = params.configId
-        refreshInterval = params.refreshInterval
-        guard let adSize, let configId else {
-            print("Error: adSize or configId is nil")
-            return
-        }
-        guard gamBanner == nil else { return }
-
-        let adUnit = BannerAdUnit(configId: configId, size: adSize)
-
-        // Configure banner parameters
-        let parameters = BannerParameters()
-        parameters.api = [Signals.Api.MRAID_2]
-        adUnit.bannerParameters = parameters
-        adUnit.setAutoRefreshMillis(time: params.refreshInterval * 1000)
-
-        // Create a GAMBannerView
-        gamBanner = AdManagerBannerView(adSize: adSizeFor(cgSize: adSize))
-        gamBanner?.adUnitID = params.gamAdUnitId
-        gamBanner?.delegate = self
-
-        // Make a bid request to Prebid Server
-        let gamRequest = AdManagerRequest()
-        adUnit.fetchDemand(adObject: gamRequest) { [weak self] resultCode in
-            guard let self, let gamBanner = self.gamBanner else { return }
-            print("Prebid demand fetch for GAM \(resultCode.name())")
-
-            // Load GAM Ad
-            gamBanner.load(gamRequest)
-        }
-    }
-
-    private func loadPrebidBanner() {
-        guard prebidBannerView == nil, let adSize, let configId else {
-            return
-        }
-
-        prebidBannerView = BannerView(frame: CGRect(origin: .zero, size: adSize),
-                                      configID: configId,
-                                      adSize: adSize)
-
-        // Configure the BannerView
-        prebidBannerView?.delegate = self
-        prebidBannerView?.adFormat = .banner
-        if let refreshInterval {
-            prebidBannerView?.refreshInterval = refreshInterval
-        }
-
-        // Load the banner ad
-        prebidBannerView?.loadAd()
-    }
-
-    private func loadInterstitialRendering(params: AdParameters) {
-        let eventHandler = GAMInterstitialEventHandler(adUnitID: params.gamAdUnitId)
-        let size = CGSize(width: Int(params.width), height: Int(params.height))
-        prebidInterstitial = InterstitialRenderingAdUnit(
-            configID: params.configId,
-            minSizePercentage: size,
-            eventHandler: eventHandler
-        )
-        prebidInterstitial?.delegate = self
-        prebidInterstitial?.loadAd()
-    }
-
     private func loadRewardVideo(params: AdParameters) {
+        rewardedAdUnit?.delegate = nil
+        rewardedAdUnit = nil
         let eventHandler = GAMRewardedAdEventHandler(adUnitID: params.gamAdUnitId)
         rewardedAdUnit = RewardedAdUnit(configID: params.configId, eventHandler: eventHandler)
         rewardedAdUnit?.delegate = self
@@ -409,29 +330,6 @@ class PrebidBannerView: NSObject {
 
     private func getRootViewController() -> UIViewController {
         return UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()
-    }
-
-    private func addGamBannerViewToView(_ bannerView: AdManagerBannerView) {
-        bannerView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(bannerView)
-
-        NSLayoutConstraint.activate([
-            bannerView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
-        ])
-    }
-
-    private func addPrebidBannerViewToView(_ bannerView: PrebidMobile.BannerView) {
-        bannerView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(bannerView)
-
-        NSLayoutConstraint.activate([
-            bannerView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
-            bannerView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
-
-            bannerView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            bannerView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
-        ])
     }
 
 }
@@ -540,78 +438,6 @@ extension PrebidBannerView: FlutterPlatformView {
     }
 }
 
-// MARK: - InterstitialAdUnitDelegate
-
-extension PrebidBannerView: InterstitialAdUnitDelegate {
-
-    func interstitialDidReceiveAd(_ interstitial: InterstitialRenderingAdUnit) {
-        NSLog("LOG: Prebid interstitial has been loaded, we're showing it...")
-        channel.invokeMethod("onAdLoaded", arguments: configId)
-    }
-
-    func interstitial(_ interstitial: InterstitialRenderingAdUnit, didFailToReceiveAdWithError error: Error?) {
-        NSLog("LOG: Error loading Prebid interstitial: \(error?.localizedDescription ?? "unknown error")")
-        channel.invokeMethod("onAdFailed", arguments: error?.localizedDescription ?? "unknown error")
-    }
-
-    func interstitialWillLeaveApplication(_ interstitial: InterstitialRenderingAdUnit) {
-        NSLog("LOG: User leaves the app via interstitial ad")
-        channel.invokeMethod("onAdUrlClicked", arguments: configId)
-    }
-
-    func interstitialDidClickAd(_ interstitial: InterstitialRenderingAdUnit) {
-        NSLog("LOG: User clicked interstitial ad")
-        channel.invokeMethod("onAdClicked", arguments: configId)
-    }
-
-    func interstitialDidCloseAd(_ interstitial: InterstitialRenderingAdUnit) {
-        NSLog("LOG: Interstitial is closed")
-        channel.invokeMethod("onAdClosed", arguments: configId)
-    }
-
-    func interstitialWillPresentAd(_ interstitial: InterstitialRenderingAdUnit) {
-        NSLog("LOG: Interstitial ad displayed")
-        channel.invokeMethod("onAdDisplayed", arguments: configId)
-    }
-
-}
-
-// MARK: - BannerViewDelegate
-
-extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
-
-    func bannerViewPresentationController() -> UIViewController? {
-        return getRootViewController()
-    }
-
-    func bannerView(_ bannerView: PrebidMobile.BannerView, didReceiveAdWithAdSize adSize: CGSize) {
-        NSLog("LOG: Prebid banner loaded successfully")
-        let configId = bannerView.configID
-        channel.invokeMethod("onAdLoaded", arguments: configId)
-    }
-
-    func bannerView(_ bannerView: PrebidMobile.BannerView, didFailToReceiveAdWith error: any Error) {
-        NSLog("LOG: Error loading Prebid banner: \(error.localizedDescription)")
-        channel.invokeMethod("onAdFailed", arguments: error.localizedDescription)
-    }
-
-    func bannerViewDidRecordImpression(_ bannerView: PrebidMobile.BannerView) {
-        NSLog("LOG: Banner did record impression")
-    }
-
-    func bannerViewWillLeaveApplication(_ bannerView: PrebidMobile.BannerView) {
-        NSLog("LOG: Banner will leave application")
-        let configId = bannerView.configID
-        channel.invokeMethod("onAdClicked", arguments: configId)
-    }
-
-    func bannerViewWillPresentModal(_ bannerView: PrebidMobile.BannerView) {
-        let configId = bannerView.configID
-        channel.invokeMethod("onAdDisplayed", arguments: configId)
-    }
-
-}
-
 extension PrebidBannerView: RewardedAdUnitDelegate {
 
     func rewardedAdDidReceiveAd(_ rewardedAd: RewardedAdUnit) {
@@ -630,6 +456,7 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
 
     func rewardedAdUserDidEarnReward(_ rewardedAd: RewardedAdUnit, reward: PrebidReward) {
         NSLog("LOG: User did earn reward: type - \(reward.type ?? ""), count - \(reward.count ?? 0)")
+        channel.invokeMethod("onUserEarnedReward", arguments: configId)
     }
 
     func rewardedAdWillPresentAd(_ rewardedAd: RewardedAdUnit) {
@@ -654,25 +481,6 @@ extension PrebidBannerView: RewardedAdUnitDelegate {
 
 }
 
-// MARK: - GADBannerViewDelegate
-
-extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
-
-    func bannerViewDidReceiveAd(_ bannerView: GoogleMobileAds.BannerView) {
-        self.channel.invokeMethod("onAdLoaded", arguments: bannerView.adUnitID)
-    }
-
-    func bannerView(_ bannerView: GoogleMobileAds.BannerView,
-                    didFailToReceiveAdWithError error: Error) {
-        print("GAM did fail to receive ad with error: \(error)")
-        channel.invokeMethod("onAdFailed", arguments: error.localizedDescription)
-        // Fallback to Prebid ad when GAM fails
-        gamBanner = nil
-        loadPrebidBanner()
-    }
-
-}
-
 // MARK: - Model
 
 /// Struct to encapsulate ad parameters from Flutter
@@ -681,19 +489,19 @@ private struct AdParameters {
     let gamAdUnitId: String
     let yandexAdUnitId: String
     let configId: String
-    let width: Double
-    let height: Double
+    let width: Int
+    let height: Int
     let adType: String
-    let refreshInterval: Double
+    let refreshInterval: Int
 
     init(from dictionary: [String: Any]) {
         gamAdUnitId = dictionary["gamAdUnitId"] as? String ?? ""
         yandexAdUnitId = dictionary["yandexAdUnitId"] as? String ?? ""
         configId = dictionary["configId"] as? String ?? ""
-        height = dictionary["height"] as? Double ?? 0
-        width = dictionary["width"] as? Double ?? 0
+        height = dictionary["height"] as? Int ?? 0
+        width = dictionary["width"] as? Int ?? 0
         adType = dictionary["adType"] as? String ?? ""
-        refreshInterval = dictionary["refreshInterval"] as? Double ?? 0
+        refreshInterval = dictionary["refreshInterval"] as? Int ?? 0
     }
 
 }
