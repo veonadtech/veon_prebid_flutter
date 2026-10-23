@@ -12,11 +12,7 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAd
 import com.google.android.gms.ads.admanager.AdManagerInterstitialAdLoadCallback
-import com.yandex.mobile.ads.banner.BannerAdEventListener
-import com.yandex.mobile.ads.banner.BannerAdSize
 import com.yandex.mobile.ads.banner.BannerAdView
-import com.yandex.mobile.ads.common.AdRequest
-import com.yandex.mobile.ads.common.AdRequestError
 import com.yandex.mobile.ads.common.ImpressionData
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
@@ -49,6 +45,21 @@ class PrebidView internal constructor(
     activity: Activity
 ) :
     PlatformView, MethodCallHandler {
+    private data class BannerLoaderConfig(
+        val configId: String,
+        val gamAdUnitId: String,
+        val yandexAdUnitId: String,
+        val width: Int,
+        val height: Int,
+        val refreshInterval: Int
+    )
+
+    private data class InterstitialLoaderConfig(
+        val configId: String,
+        val gamAdUnitId: String,
+        val yandexAdUnitId: String
+    )
+
     private var applicationContext: Context = context
     private var appActivity: Activity = activity
     private val channel = MethodChannel(messenger, "setupad.plugin.setupad_prebid_flutter/myChannel_$id")
@@ -56,6 +67,7 @@ class PrebidView internal constructor(
 
     // NEW: keep a reference to MultiInterstitialAdLoader so we can control it later
     private var interstitialLoader: MultiInterstitialAdLoaderLegacyGam? = null
+    private var activeInterstitialConfig: InterstitialLoaderConfig? = null
     // Keep last used IDs so "loadInterstitial" works even if called later
     private var lastInterstitialConfigId: String? = null
     private var lastInterstitialGamAdUnitId: String? = null
@@ -64,6 +76,7 @@ class PrebidView internal constructor(
     // NEW: keep a reference to BannerView so we can control it later
     private var bannerView: BannerView? = null
     private var bannerLoader: MultiBannerLoaderLegacyGam? = null
+    private var activeBannerConfig: BannerLoaderConfig? = null
     private var adView: View? = null
 
     // Keep last used IDs and size so "loadBanner" works even if called later
@@ -140,8 +153,7 @@ class PrebidView internal constructor(
                 if (cfg.isNullOrEmpty() || gamAdunit.isNullOrEmpty() || yandexAdunit.isNullOrEmpty()) {
                     Log.w(Tag, "loadInterstitial called but config/gamAdUnit/yandexAdUnit not set yet (call setParams first).")
                 } else {
-                    ensureInterstitialLoader(gamAdunit, yandexAdunit, cfg)
-                    interstitialLoader?.loadAd()
+                    createInterstitial(gamAdunit, yandexAdunit, cfg)
                 }
                 result.success(null)
             }
@@ -167,7 +179,7 @@ class PrebidView internal constructor(
                 if (configId.isNullOrEmpty() || gamAdUnitId.isNullOrEmpty() || yandexAdUnitId.isNullOrEmpty()
                     || width == null || height == null
                 ) {
-                    Log.w(Tag, "loadBanner called but config/gamAdUnit/yandexAdUnitId/width/height not set yet (call setParams first).")
+                    Log.w(Tag, "loadBanner called without an ad placement or size (call setParams first).")
                 } else {
                     ensureBannerLoader(
                         gamAdUnitId,
@@ -287,6 +299,7 @@ class PrebidView internal constructor(
             height,
             refreshInterval
         )
+        bannerLoader?.loadAd()
     }
 
     /**
@@ -356,9 +369,9 @@ class PrebidView internal constructor(
 
     // Ensure we have a loader instance bound to these IDs; recreate if IDs changed
     private fun ensureInterstitialLoader(gamAdUnitId: String, yandexAdUnitId: String, configId: String) {
+        val requestedConfig = InterstitialLoaderConfig(configId, gamAdUnitId, yandexAdUnitId)
         val current = interstitialLoader
-        if (current == null || lastInterstitialGamAdUnitId != gamAdUnitId || lastInterstitialYandexAdUnitId != yandexAdUnitId
-            || lastInterstitialConfigId != configId) {
+        if (current == null || activeInterstitialConfig != requestedConfig) {
             try {
                 current?.destroy()
             } catch (e: Exception) {
@@ -370,6 +383,7 @@ class PrebidView internal constructor(
                 gamAdUnitId = gamAdUnitId,
                 yandexAdUnitId = yandexAdUnitId
             )
+            activeInterstitialConfig = requestedConfig
         }
     }
 
@@ -383,11 +397,23 @@ class PrebidView internal constructor(
         refreshInterval: Int?
     ) {
         val refresh = refreshInterval ?: 30
+        val requestedConfig = BannerLoaderConfig(configId, gamAdUnitId, yandexAdUnitId, width, height, refresh)
         val current = bannerLoader
-        if (current == null || lastBannerGamAdUnitId != gamAdUnitId || lastBannerYandexAdUnitId != yandexAdUnitId || lastBannerConfigId != configId) {
+        if (current == null || activeBannerConfig != requestedConfig) {
+            // Keep each loader bound to the placement and size used to create it.
+            bannerLayout?.removeAllViews()
             try {
+                bannerView?.destroy()
                 current?.destroy()
-                bannerLoader = MultiBannerLoaderLegacyGam(
+            } catch (e: Exception) {
+                Log.w(Tag, "Error destroying old banner loader: $e")
+            }
+            adView = null
+            bannerView = null
+            bannerLoader = null
+            activeBannerConfig = null
+            try {
+                val loader = MultiBannerLoaderLegacyGam(
                     context = applicationContext,
                     adSize = AdSize(width, height),
                     configId = configId,
@@ -396,7 +422,7 @@ class PrebidView internal constructor(
                     autoRefreshDelay = refresh
                 )
 
-                bannerLoader?.setListener(object : MultiBannerViewListener {
+                loader.setListener(object : MultiBannerViewListener {
                     override fun onAdLoaded(view: View, sdk: SdkType) {
                         adView = view
                         val id = getAdId(sdk, configId, gamAdUnitId, yandexAdUnitId)
@@ -439,19 +465,11 @@ class PrebidView internal constructor(
                     override fun onAdOpened(sdk: SdkType) {
                         Log.d(Tag, "onAdOpened: Ad opened from ${sdk.name}")
                     }
-
-                    override fun onLeftApplication(sdk: SdkType) {
-                        Log.d(Tag, "onLeftApplication: Left app ${sdk.name}")
-                    }
-
-                    override fun onReturnedToApplication(sdk: SdkType) {
-                        Log.d(Tag, "onReturnedToApplication: Returned to app (${sdk.name})")
-                    }
                 })
-
-                bannerLoader?.loadAd()
+                bannerLoader = loader
+                activeBannerConfig = requestedConfig
             } catch (e: Exception) {
-                Log.w(Tag, "Error destroying old bannerView: $e")
+                Log.e(Tag, "Error creating banner loader: $e")
             }
         }
     }
@@ -556,6 +574,7 @@ class PrebidView internal constructor(
         } finally {
             bannerView = null
             bannerLoader = null
+            activeBannerConfig = null
             adView = null
         }
     }
@@ -567,6 +586,7 @@ class PrebidView internal constructor(
             Log.w(Tag, "Error destroying interstitial loader: $e")
         } finally {
             interstitialLoader = null
+            activeInterstitialConfig = null
         }
     }
 
