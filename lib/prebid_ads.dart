@@ -66,22 +66,26 @@ class PrebidAd extends StatefulWidget {
     Key? key,
     required this.adType,
     required this.configId,
-    required this.adUnitId,
+    required this.gamAdUnitId,
+    this.yandexAdUnitId,
     required this.width,
     required this.height,
     required this.refreshInterval,
     required this.eventListener,
     required this.prebidController,
+    this.onUserEarnedReward,
   }) : super(key: key);
 
   final AdType adType;
   final String configId;
-  final String adUnitId;
+  final String gamAdUnitId;
+  final String? yandexAdUnitId;
   final int? width;
   final int? height;
   final int? refreshInterval;
   final EventListener eventListener;
   final PrebidController prebidController;
+  final void Function(String adId)? onUserEarnedReward;
 
   @override
   State<PrebidAd> createState() => _PrebidAdState();
@@ -127,11 +131,8 @@ class _PrebidAdState extends State<PrebidAd> {
     _sendParams(channel);
   }
 
-  /// iOS: if your iOS side uses a per-view channel, replace with that.
   void _oniOSViewCreated(int id) {
-    // If iOS uses per-view channels, mirror Android naming with id.
-    // If your native iOS implementation uses a single channel, keep as below.
-    final channel = const MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
+    final channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios_$id');
     _wireChannel(channel);
     _sendParams(channel);
   }
@@ -158,6 +159,12 @@ class _PrebidAdState extends State<PrebidAd> {
         case "onAdClosed":
           widget.eventListener.onAdClosed(configId);
           break;
+        case "onImpression":
+          widget.eventListener.onAdImpression(configId);
+          break;
+        case "onUserEarnedReward":
+          widget.onUserEarnedReward?.call(configId);
+          break;
       }
     });
   }
@@ -167,7 +174,8 @@ class _PrebidAdState extends State<PrebidAd> {
     channel.invokeMethod('setParams', {
       "adType": widget.adType.name,
       "configId": widget.configId,
-      "adUnitId": widget.adUnitId,
+      "gamAdUnitId": widget.gamAdUnitId,
+      "yandexAdUnitId": widget.yandexAdUnitId,
       "height": widget.height,
       "width": widget.width,
       "refreshInterval": widget.refreshInterval,

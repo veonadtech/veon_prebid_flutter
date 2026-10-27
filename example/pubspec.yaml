@@ -1,5 +1,6 @@
 name: setupad_prebid_flutter_example
 description: Demonstrates how to use the setupad_prebid_flutter plugin.
+version: 1.0.0+1
 publish_to: 'none'
 
 environment:

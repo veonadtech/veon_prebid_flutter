@@ -1,5 +1,55 @@
 # CHANGELOG
 
+# 0.7.0-yandex
+## Android version upgraded to 0.5.2-yandex
+### Added
+* Handle Prebid Server bid caching failures gracefully
+* Expire ads respectively to the seatbid.bid.exp
+* Custom targeting for GAM rendering API
+* Support OpenRTB 2.6 EIDs in user.eids
+* Third-party plugin renderers in adapters
+* Multiformat banner ad unit in the rendering and mediation APIs
+
+### Changed
+* Next Gen compatibility
+* Send ext.prebid.targeting flags as booleans, not strings
+* Mute/unmute audio flow for video creative
+* Enables video player click
+* Auto interstitial dismissal
+* Detect connection type through NetworkCapabilities on API 23+
+* Read screen size from WindowMetrics on API 30+
+* Fix COPPA flag sent as regs.ext.coppa instead of regs.coppa
+* Fix banner load callbacks firing before creative attachment
+* Fix interstitial controls misplaced after orientation changes
+* Exoplayer examples
+* Checks nullable bids for next gen custom targeting
+* Bump up Yandex SDK ver to 8.6.0
+
+### Fixed
+* Fix close button missing on rewarded end card
+* Fix CTA button missing in rewarded ads
+* Stop installing the removed SDK tools package in CI
+* Release the MRAID command queue on interstitial expand()
+* Dispatch MRAID JS bridge calls to the main thread
+* Fix controls misplaced in rewarded ads
+* Bumps version to 3.4.0 by @mdanylov-sigma
+* Remove legacy Travis CI setup
+* fit the corrective WebView scale inside both axes and retry on layout
+
+## iOS SDK version upgraded to 0.5.2
+* Yandex integration (waterfall with SDK priority list)
+
+# 0.6.2-yandex
+## Changed
+* Interstitial container size is now derived from the bid response (`bid.w`/`bid.h`) instead of
+* always filling the screen, capped so it never exceeds the display's size (fix delivered via 
+* `prebid-android-sdk` bump to `0.4.3.1-yandex`, no changes in this repo)
+## Added
+* Integration with the Yandex SDK has been implemented
+### Upgrading from < 0.6.2
+* If you were using `adUnitId`, rename it to `gamAdUnitId`. If you want to serve
+* Yandex demand as well, also pass `yandexAdUnitId`.
+
 # 0.6.1
 ### Changed
 * Set minheightperc and minwidthperc equal 100% in the Demo app

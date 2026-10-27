@@ -46,7 +46,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 23
     }
 
     dependencies {
@@ -68,9 +68,11 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.android.gms:play-services-ads:22.2.0'
-    implementation 'com.github.veonadtech.prebid-android-sdk:core:0.4.2'
-    implementation 'com.github.veonadtech.prebid-android-sdk:eventhandlers:0.4.2'
-    implementation 'com.github.veonadtech.prebid-android-sdk:mobile:0.4.2'
-    implementation 'com.github.veonadtech.prebid-android-sdk:prebidorg:0.4.2'
+    implementation 'com.google.android.gms:play-services-ads:25.4.0'
+    implementation 'com.github.veonadtech.prebid-android-sdk:core:0.5.2-yandex'
+    implementation 'com.github.veonadtech.prebid-android-sdk:eventhandlers:0.5.2-yandex'
+    implementation 'com.github.veonadtech.prebid-android-sdk:mobile:0.5.2-yandex'
+    implementation 'com.github.veonadtech.prebid-android-sdk:prebidorg:0.5.2-yandex'
+
+    implementation 'com.yandex.android:mobileads:8.6.0'
 }
