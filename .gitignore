@@ -7,6 +7,10 @@ example/android/.gradle
 example/android/.idea
 
 # Flutter / Dart
+/build/
+/e2e/node_modules/
+/e2e/test-results/
+/e2e/playwright-report/
 .flutter-plugins
 .flutter-plugins-dependencies
 **/.flutter-plugins-dependencies

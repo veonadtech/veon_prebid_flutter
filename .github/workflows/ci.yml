@@ -1,0 +1,156 @@
+name: Flutter adapter CI
+
+on:
+  pull_request:
+    branches: [dev, test]
+  push:
+    branches: [dev, test]
+    tags: ['test/v[0-9]*.[0-9]*.[0-9]*', 'v[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch and Jira link
+        if: github.event_name == 'pull_request'
+        env:
+          SOURCE: ${{ github.head_ref }}
+          TARGET: ${{ github.base_ref }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [[ "$TARGET" == dev && ! "$SOURCE" =~ ^(feature/[A-Za-z]+-[0-9]+|(bug|sec)-[A-Za-z]+-[0-9]+)$ ]]; then
+            echo "Use feature/AD-123, bug-AD-123 or sec-AD-123 branches" >&2
+            exit 1
+          fi
+          if [[ "$TARGET" == test && "$SOURCE" != dev ]]; then
+            echo "Only dev may be merged into test" >&2
+            exit 1
+          fi
+          if [[ ! "$BODY" =~ https?://[^[:space:]]+/browse/[A-Za-z]+-[0-9]+ ]]; then
+            echo "PR description must contain a Jira issue URL" >&2
+            exit 1
+          fi
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze lib test
+      - run: flutter test
+
+  android-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: flutter pub get
+        working-directory: example
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          script: cd example && flutter test integration_test/plugin_integration_test.dart -d emulator-5554
+
+  ios-integration:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+      - run: flutter pub get
+        working-directory: example
+      - name: Boot iOS simulator
+        run: |
+          DEVICE="$(xcrun simctl list devices available | sed -nE 's/.*(iPhone [^(]+) \(([0-9A-F-]{36})\).*/\2/p' | head -1)"
+          test -n "$DEVICE"
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"
+      - run: flutter test integration_test/plugin_integration_test.dart -d "$DEVICE"
+        working-directory: example
+
+  candidate-tag:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/test/v')
+    needs: [unit, android-integration, ios-integration]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify candidate tag matches dev
+        run: |
+          VERSION="$(sed -nE 's/^version: ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' pubspec.yaml)"
+          test "$GITHUB_REF_NAME" = "test/v$VERSION"
+          git fetch origin dev --depth=1
+          test "$GITHUB_SHA" = "$(git rev-parse FETCH_HEAD)"
+
+  stage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+    needs: [unit, android-integration, ios-integration]
+    runs-on: ubuntu-latest
+    environment: stage
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require deployed stage URL
+        env:
+          STAGE_URL: ${{ vars.STAGE_URL }}
+        run: test -n "$STAGE_URL"
+      - name: Deploy consumer app to stage
+        env:
+          STAGE_DEPLOY_URL: ${{ secrets.STAGE_DEPLOY_URL }}
+          STAGE_DEPLOY_TOKEN: ${{ secrets.STAGE_DEPLOY_TOKEN }}
+        run: |
+          test -n "$STAGE_DEPLOY_URL"
+          test -n "$STAGE_DEPLOY_TOKEN"
+          curl -fsS -X POST -H "Authorization: Bearer $STAGE_DEPLOY_TOKEN" -H "Content-Type: application/json" --data "{\"sha\":\"$GITHUB_SHA\"}" "$STAGE_DEPLOY_URL"
+      - run: npm ci
+        working-directory: e2e
+      - run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - run: npx playwright test
+        working-directory: e2e
+        env:
+          STAGE_URL: ${{ vars.STAGE_URL }}
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [unit, android-integration, ios-integration]
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: write
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify version, test branch and stage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(sed -nE 's/^version: ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' pubspec.yaml)"
+          test "$GITHUB_REF_NAME" = "v$VERSION"
+          git fetch origin test --depth=1
+          test "$GITHUB_SHA" = "$(git rev-parse FETCH_HEAD)"
+          gh api -X GET "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs" -f per_page=100 \
+            --jq '.check_runs[] | select(.name == "stage" and .conclusion == "success") | .id' | grep -q .
+      - name: Publish release tag to production
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
