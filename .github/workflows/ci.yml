@@ -88,7 +88,9 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
-          script: cd example && flutter test integration_test/plugin_integration_test.dart -d emulator-5554
+          script: |
+            adb -s emulator-5554 uninstall setupad.plugin.setupad_prebid_flutter_example || true
+            cd example && flutter test integration_test/plugin_integration_test.dart --no-uninstall -d emulator-5554
 
   ios-integration:
     runs-on: macos-latest
