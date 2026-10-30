@@ -27,9 +27,13 @@ jobs:
           BODY: ${{ github.event.pull_request.body }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$TARGET" == dev && ! "$SOURCE" =~ ^(feature/[A-Za-z]+-[0-9]+|(bug|sec)-[A-Za-z]+-[0-9]+)$ ]]; then
-            echo "Use feature/AD-123, bug-AD-123 or sec-AD-123 branches" >&2
-            exit 1
+          if [[ "$TARGET" == dev ]]; then
+            if [[ "$SOURCE" =~ ^(feature|bug|bugfix|hotfix|chore|ci|build|test|perf|refactor|sec)/([A-Za-z]+-[0-9]+)(-[A-Za-z0-9]+)*$ ]]; then
+              ISSUE_KEY="${BASH_REMATCH[2]}"
+            else
+              echo "Use <type>/AD-123[-description] branches. Allowed types: feature, bug, bugfix, hotfix, chore, ci, build, test, perf, refactor, sec" >&2
+              exit 1
+            fi
           fi
           if [[ "$TARGET" == test && "$SOURCE" != dev ]]; then
             echo "Only dev may be merged into test" >&2
@@ -46,6 +50,13 @@ jobs:
           if [[ ! "$BODY" =~ https?://[^[:space:]]+/browse/[A-Za-z]+-[0-9]+ ]]; then
             echo "PR description must contain a Jira issue URL" >&2
             exit 1
+          fi
+          if [[ "$TARGET" == dev ]]; then
+            ISSUE_URL_PATTERN="https?://[^[:space:]]+/browse/${ISSUE_KEY}([^[:alnum:]-]|$)"
+            if [[ ! "$BODY" =~ $ISSUE_URL_PATTERN ]]; then
+              echo "PR description must link to Jira issue $ISSUE_KEY from the branch name" >&2
+              exit 1
+            fi
           fi
 
   unit:
