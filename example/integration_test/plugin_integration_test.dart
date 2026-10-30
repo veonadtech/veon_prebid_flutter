@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,21 +9,35 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('native view and per-view channel are registered', (tester) async {
-    final created = <int>[];
+  testWidgets('native view and per-view channel are registered',
+      (tester) async {
+    final createdView = Completer<int>();
     const viewType = 'setupad.plugin.setupad_prebid_flutter';
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: SizedBox(
-      width: 320,
-      height: 50,
-      child: Platform.isAndroid
-          ? AndroidView(viewType: viewType, onPlatformViewCreated: created.add)
-          : UiKitView(viewType: viewType, onPlatformViewCreated: created.add),
-    ))));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 320,
+            height: 50,
+            child: Platform.isAndroid
+                ? AndroidView(
+                    viewType: viewType,
+                    onPlatformViewCreated: createdView.complete,
+                  )
+                : UiKitView(
+                    viewType: viewType,
+                    onPlatformViewCreated: createdView.complete,
+                  ),
+          ),
+        ),
+      ),
+    );
+    final viewId =
+        await createdView.future.timeout(const Duration(seconds: 20));
     await tester.pumpAndSettle();
-    expect(created, hasLength(1));
 
     if (Platform.isAndroid) {
-      final channel = MethodChannel('$viewType/myChannel_${created.single}');
+      final channel = MethodChannel('$viewType/myChannel_$viewId');
       await channel.invokeMethod<void>('setParams', <String, Object?>{
         'adType': 'banner',
         'configId': '',
@@ -38,7 +53,8 @@ void main() {
       const channel = MethodChannel('$viewType/ios');
       await expectLater(
         channel.invokeMethod<void>('setParams'),
-        throwsA(isA<PlatformException>().having((e) => e.code, 'code', 'LOAD_PARAMETERS')),
+        throwsA(isA<PlatformException>()
+            .having((e) => e.code, 'code', 'LOAD_PARAMETERS')),
       );
     }
   });
