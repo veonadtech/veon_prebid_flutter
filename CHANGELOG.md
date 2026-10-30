@@ -1,5 +1,9 @@
 # CHANGELOG
 
+# 0.7.2
+## Added
+* Added GitHub Actions CI/CD pipeline
+
 # 0.7.1
 ## Android SDK version upgraded to 0.5.3
 ### Fixed
