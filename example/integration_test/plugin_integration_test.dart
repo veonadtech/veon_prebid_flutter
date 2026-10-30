@@ -1,25 +1,61 @@
-// This is a basic Flutter integration test.
-//
-// Since integration tests run in a full Flutter application, they can interact
-// with the host side of a plugin implementation, unlike Dart unit tests.
-//
-// For more information about Flutter integration tests, please see
-// https://docs.flutter.dev/cookbook/testing/integration/introduction
+import 'dart:async';
+import 'dart:io';
 
-
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-
-import 'package:setupad_prebid_flutter/setupad_prebid_flutter.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('getPlatformVersion test', (WidgetTester tester) async {
-    final SetupadPrebidFlutter plugin = SetupadPrebidFlutter();
-    final String? version = await plugin.getPlatformVersion();
-    // The version string depends on the host platform running the test, so
-    // just assert that some non-empty string is returned.
-    expect(version?.isNotEmpty, true);
+  testWidgets('native view and per-view channel are registered',
+      (tester) async {
+    final createdView = Completer<int>();
+    const viewType = 'setupad.plugin.setupad_prebid_flutter';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 320,
+            height: 50,
+            child: Platform.isAndroid
+                ? AndroidView(
+                    viewType: viewType,
+                    onPlatformViewCreated: createdView.complete,
+                  )
+                : UiKitView(
+                    viewType: viewType,
+                    onPlatformViewCreated: createdView.complete,
+                  ),
+          ),
+        ),
+      ),
+    );
+    final viewId =
+        await createdView.future.timeout(const Duration(seconds: 20));
+    await tester.pumpAndSettle();
+
+    if (Platform.isAndroid) {
+      final channel = MethodChannel('$viewType/myChannel_$viewId');
+      await channel.invokeMethod<void>('setParams', <String, Object?>{
+        'adType': 'banner',
+        'configId': '',
+        'adUnitId': '',
+        'width': 320,
+        'height': 50,
+        'refreshInterval': 30,
+      });
+      await channel.invokeMethod<void>('pauseAuction');
+      await channel.invokeMethod<void>('resumeAuction');
+      await channel.invokeMethod<void>('destroyAuction');
+    } else {
+      const channel = MethodChannel('$viewType/ios');
+      await expectLater(
+        channel.invokeMethod<void>('setParams'),
+        throwsA(isA<PlatformException>()
+            .having((e) => e.code, 'code', 'LOAD_PARAMETERS')),
+      );
+    }
   });
 }
