@@ -5,7 +5,7 @@ on:
     branches: [dev, test, main]
     types: [opened, synchronize, reopened, edited]
   push:
-    branches: [dev, test, main]
+    branches: [test]
     tags: ['v*']
   workflow_dispatch:
 
