@@ -88,8 +88,6 @@ class PrebidAd extends StatefulWidget {
 }
 
 class _PrebidAdState extends State<PrebidAd> {
-  MethodChannel? _channel;
-
   @override
   Widget build(BuildContext context) {
     final isBanner = widget.adType == AdType.banner;
@@ -131,13 +129,12 @@ class _PrebidAdState extends State<PrebidAd> {
   void _oniOSViewCreated(int id) {
     // If iOS uses per-view channels, mirror Android naming with id.
     // If your native iOS implementation uses a single channel, keep as below.
-    final channel = const MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
+    const channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
     _wireChannel(channel);
     _sendParams(channel);
   }
 
   void _wireChannel(MethodChannel channel) {
-    _channel = channel;
     widget.prebidController._attachChannel(channel);
 
     channel.setMethodCallHandler((call) async {

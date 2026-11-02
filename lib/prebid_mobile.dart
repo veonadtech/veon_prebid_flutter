@@ -1,6 +1,4 @@
-import 'dart:io';
-
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:setupad_prebid_flutter/prebid_sdk_listener.dart';
 
@@ -24,7 +22,7 @@ class PrebidMobile {
     _sdkListener = sdkListener;
     _pluginChannel.setMethodCallHandler(_methodCallHandler);
 
-    if(Platform.isAndroid){
+    if (defaultTargetPlatform == TargetPlatform.android) {
       const MethodChannel channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/android_init');
       return channel.invokeMethod('startPrebid', {
         "prebidHost": prebidHost,

@@ -1,4 +1,12 @@
 # Flutter Prebid plugin
+
+## Testing and release process
+
+Run adapter unit/widget tests with `flutter test`. The native bridge integration
+test runs from `example` with
+`flutter test integration_test/plugin_integration_test.dart -d <device-id>`.
+Branch rules, CI stages, stage deployment and release tagging are
+documented in [docs/ci-cd.md](docs/ci-cd.md).
 ## Prerequisites
 * Flutter version at least `2.10.5`
 ### Android
