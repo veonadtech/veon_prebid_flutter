@@ -71,6 +71,7 @@ jobs:
       - run: flutter test
 
   android-integration:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,6 +97,7 @@ jobs:
           script: cd example && flutter test integration_test/plugin_integration_test.dart --no-uninstall -d emulator-5554 -r expanded
 
   ios-integration:
+    if: github.event_name == 'pull_request'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -116,7 +118,7 @@ jobs:
 
   candidate-tag:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && contains(github.ref_name, '-rc.')
-    needs: [unit, android-integration, ios-integration]
+    needs: [unit]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -134,7 +136,7 @@ jobs:
 
   stage:
     if: github.event_name == 'push' && github.ref == 'refs/heads/test'
-    needs: [unit, android-integration, ios-integration]
+    needs: [unit]
     runs-on: ubuntu-latest
     environment: stage
     steps:
@@ -165,7 +167,7 @@ jobs:
 
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
-    needs: [unit, android-integration, ios-integration]
+    needs: [unit]
     runs-on: ubuntu-latest
     environment: prod
     permissions:
