@@ -16,6 +16,7 @@ class PrebidBannerView: NSObject {
     private var container: UIView
 
     private var gamBanner: AdManagerBannerView?
+    private var gamAdUnit: BannerAdUnit?
 
     /// Prebid banner view
     private var prebidBannerView: PrebidMobile.BannerView?
@@ -81,6 +82,8 @@ class PrebidBannerView: NSObject {
         prebidBannerView = nil
         gamBanner?.delegate = nil
         gamBanner = nil
+        gamAdUnit?.stopAutoRefresh()
+        gamAdUnit = nil
         prebidInterstitial?.delegate = nil
         prebidInterstitial = nil
         rewardedAdUnit?.delegate = nil
@@ -176,6 +179,8 @@ class PrebidBannerView: NSObject {
         prebidBannerView = nil
         gamBanner?.delegate = nil
         gamBanner = nil
+        gamAdUnit?.stopAutoRefresh()
+        gamAdUnit = nil
 
         result(nil)
     }
@@ -228,6 +233,7 @@ class PrebidBannerView: NSObject {
         guard gamBanner == nil else { return }
 
         let adUnit = BannerAdUnit(configId: configId, size: adSize)
+        gamAdUnit = adUnit
 
         // Configure banner parameters
         let parameters = BannerParameters()
@@ -238,6 +244,7 @@ class PrebidBannerView: NSObject {
         // Create a GAMBannerView
         gamBanner = AdManagerBannerView(adSize: adSizeFor(cgSize: adSize))
         gamBanner?.adUnitID = params.adUnitId
+        gamBanner?.rootViewController = getRootViewController()
         gamBanner?.delegate = self
 
         // Make a bid request to Prebid Server
@@ -456,6 +463,8 @@ extension PrebidBannerView: GoogleMobileAds.BannerViewDelegate {
         print("GAM did fail to receive ad with error: \(error)")
         channel.invokeMethod("onAdFailed", arguments: error.localizedDescription)
         // Fallback to Prebid ad when GAM fails
+        gamAdUnit?.stopAutoRefresh()
+        gamAdUnit = nil
         gamBanner = nil
         loadPrebidBanner()
     }
