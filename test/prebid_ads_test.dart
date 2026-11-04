@@ -44,14 +44,28 @@ void main() {
       testWidgets('$platform $adType sends parameters, commands and events',
           (tester) async {
         debugDefaultTargetPlatformOverride = platform;
-        final channel = MethodChannel(platform == TargetPlatform.android
-            ? 'setupad.plugin.setupad_prebid_flutter/myChannel_7'
-            : 'setupad.plugin.setupad_prebid_flutter/ios');
         final calls = <MethodCall>[];
-        messenger.setMockMethodCallHandler(channel, (call) async {
+        Future<void> recordCall(MethodCall call) async {
           calls.add(call);
-          return null;
-        });
+        }
+
+        MethodChannel? channel;
+        if (platform == TargetPlatform.android) {
+          messenger.setMockMethodCallHandler(SystemChannels.platform_views,
+              (call) async {
+            if (call.method == 'create') {
+              final id = (call.arguments as Map<Object?, Object?>)['id'] as int;
+              channel = MethodChannel(
+                  'setupad.plugin.setupad_prebid_flutter/myChannel_$id');
+              messenger.setMockMethodCallHandler(channel!, recordCall);
+            }
+            return null;
+          });
+        } else {
+          channel =
+              const MethodChannel('setupad.plugin.setupad_prebid_flutter/ios');
+          messenger.setMockMethodCallHandler(channel, recordCall);
+        }
         final controller = PrebidController();
         final events = _Events();
         await tester.pumpWidget(MaterialApp(
@@ -66,12 +80,8 @@ void main() {
           eventListener: events,
           prebidController: controller,
         ))));
-        expect(controller.isAttached, false);
-        if (platform == TargetPlatform.android) {
-          tester
-              .widget<AndroidView>(find.byType(AndroidView))
-              .onPlatformViewCreated!(7);
-        } else {
+        if (platform == TargetPlatform.iOS) {
+          expect(controller.isAttached, false);
           tester
               .widget<UiKitView>(find.byType(UiKitView))
               .onPlatformViewCreated!(7);
@@ -88,7 +98,7 @@ void main() {
           'refreshInterval': adType == AdType.banner ? 30 : null,
         });
         final platformView = platform == TargetPlatform.android
-            ? find.byType(AndroidView)
+            ? find.byType(PlatformViewLink)
             : find.byType(UiKitView);
         final box = tester.widget<SizedBox>(find
             .ancestor(
@@ -128,7 +138,7 @@ void main() {
           'onAdClosed'
         ]) {
           await messenger.handlePlatformMessage(
-            channel.name,
+            channel!.name,
             codec.encodeMethodCall(MethodCall(method, 'value')),
             (_) {},
           );
@@ -140,7 +150,11 @@ void main() {
           'clicked:value',
           'closed:value',
         ]);
-        messenger.setMockMethodCallHandler(channel, null);
+        messenger.setMockMethodCallHandler(channel!, null);
+        if (platform == TargetPlatform.android) {
+          messenger.setMockMethodCallHandler(
+              SystemChannels.platform_views, null);
+        }
         debugDefaultTargetPlatformOverride = null;
       });
     }

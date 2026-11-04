@@ -1,0 +1,16 @@
+services:
+  pbs:
+    image: ghcr.io/prebid/prebid-server-java@sha256:0b9d076ffa442e54ffaa723973bdbe7f19ec28886911bc4357c5f3d01dca6220
+    environment:
+      JAVA_OPTS: -Xms128m -Xmx768m
+    volumes:
+      - ./java/application.yaml:/app/prebid-server/conf/application.yaml:ro
+      - ./java/app-settings.yaml:/app/prebid-server/e2e/app-settings.yaml:ro
+      - ./stored-request.json:/app/prebid-server/e2e/requests/test.json:ro
+      - ./java/stored-imp.json:/app/prebid-server/e2e/imps/test-imp-id.json:ro
+      - ./java/empty:/app/prebid-server/e2e/empty:ro
+  audit:
+    environment:
+      PBS_UPSTREAM: http://pbs:8080
+      PBS_EXPECTED_CRID: "1.1.1"
+      PBS_EXPECTED_SEAT: generic

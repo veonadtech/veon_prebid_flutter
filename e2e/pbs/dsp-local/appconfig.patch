@@ -1,0 +1,53 @@
+diff --git a/appconfig/appconfig.go b/appconfig/appconfig.go
+index 0f2d78c..f0a987e 100644
+--- a/appconfig/appconfig.go
++++ b/appconfig/appconfig.go
+@@ -2,6 +2,7 @@ package appconfig
+ 
+ import (
+ 	"log"
++	"os"
+ 
+ 	"github.com/spf13/viper"
+ 	"github.com/veonadtech/dsp-bidder/addata"
+@@ -77,21 +78,26 @@ func Load() error {
+ 		AgencyDiscrepancy: 1, SspCommission: 1, AgencyCommission: 1, AdvertiserCommission: 1, SegmentIds: []string{}}
+ 
+ 	var err error
+-	appConfig.GeoResolver, err = geo.NewGeoParser(
+-		viper.GetString("geo.sypex"),
+-		viper.GetString("geo.maxmind"),
+-		viper.GetString("geo.iso3166"))
+-	if err != nil {
+-		log.Println("Error creating geo resolver: ", err)
+-		return err
+-	}
++	if os.Getenv("DSP_E2E_MODE") == "1" {
++		appConfig.GeoResolver = e2eGeoResolver{}
++		appConfig.UdgerParser = e2eUdgerParser{}
++	} else {
++		appConfig.GeoResolver, err = geo.NewGeoParser(
++			viper.GetString("geo.sypex"),
++			viper.GetString("geo.maxmind"),
++			viper.GetString("geo.iso3166"))
++		if err != nil {
++			log.Println("Error creating geo resolver: ", err)
++			return err
++		}
+ 
+-	appConfig.UdgerParser, err = udger.New(
+-		viper.GetString("udger.db_path"),
+-	)
+-	if err != nil {
+-		log.Println("Error creating udger parser: ", err)
+-		return err
++		appConfig.UdgerParser, err = udger.New(
++			viper.GetString("udger.db_path"),
++		)
++		if err != nil {
++			log.Println("Error creating udger parser: ", err)
++			return err
++		}
+ 	}
+ 
+ 	appConfig.ServingToggle = true
