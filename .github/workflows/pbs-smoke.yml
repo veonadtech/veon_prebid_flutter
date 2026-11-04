@@ -1,0 +1,55 @@
+name: PBS fixture smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pbs-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Prebid Server
+        run: docker compose -f e2e/pbs/compose.yaml up -d
+      - name: Verify stored banner bid
+        run: bash e2e/pbs/smoke.sh
+      - name: Reset auction audit before Flutter test
+        run: curl --fail --silent --show-error --request POST http://127.0.0.1:8000/__e2e/reset
+      - uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: flutter pub get
+        working-directory: example
+      - name: Enable KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          script: bash e2e/pbs/run-android-render.sh
+      - name: Upload Android banner screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pbs-android-render
+          path: e2e/pbs/artifacts/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Verify Flutter request and PBS bid
+        run: bash e2e/pbs/verify-app-auction.sh
+      - name: Show Prebid Server logs on failure
+        if: failure()
+        run: docker compose -f e2e/pbs/compose.yaml logs --tail 120 pbs audit
+      - name: Stop Prebid Server
+        if: always()
+        run: docker compose -f e2e/pbs/compose.yaml down

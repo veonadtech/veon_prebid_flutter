@@ -1,0 +1,15 @@
+{
+  "id": "dsp-e2e-auction",
+  "imp": [{
+    "id": "1",
+    "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+    "tagid": "e2e-banner",
+    "bidfloor": 0.1,
+    "bidfloorcur": "USD",
+    "ext": {"bidder": {"publisher_id": "e2e-app", "placement_id": "e2e-banner"}}
+  }],
+  "app": {"bundle": "com.example.pbs.e2e", "publisher": {"id": "e2e-app"}},
+  "device": {"ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36", "ip": "127.0.0.1", "os": "Android"},
+  "cur": ["USD"],
+  "at": 1
+}

@@ -21,19 +21,19 @@ only Latin letters and digits. The Jira project prefix may be any sequence of
 letters, not just `AD`.
 
 Merge task branches into `dev` through PRs. Merge `dev` into `test` through a
-PR, then merge `test` into `main` through a PR after `stage` succeeds. Every PR
-description must contain a Jira link such as
+PR, then merge `test` into `main` through a PR after validating a release
+candidate. Every PR description must contain a Jira link such as
 `https://buildx-veon.atlassian.net/browse/AD-123`. For PRs targeting `dev`,
 the issue key in the link must match the branch name.
 
 Configure GitHub rulesets for `dev`, `test`, and `main`: block direct pushes,
 require at least one approval, require all review conversations to be resolved,
 and require the `policy`, `unit`, `android-integration`, and `ios-integration`
-checks from the `Flutter adapter CI` workflow. Allow PRs into `test` only from
-`dev`. Allow PRs into `main` only from `test`, with a successful `stage` check
-on the HEAD of `test`. Configure the `prod` GitHub Environment with a required
-reviewer. The workflow file alone cannot reliably enforce these restrictions;
-GitHub must check them before merging.
+checks from the `Flutter adapter CI` workflow. The `policy` check accepts PRs
+into `test` only from `dev`, and PRs into `main` only from `test` with
+successful `stage` and `candidate-tag` checks on the HEAD of `test`. Configure
+the `prod` GitHub Environment with a required reviewer. GitHub rulesets must
+require the checks and review before merging.
 
 ## Release process
 
@@ -41,14 +41,15 @@ GitHub must check them before merging.
    integration.
 2. Update `version` in `pubspec.yaml` to `X.Y.Z` through a PR into `dev`.
 3. Open a PR from `dev` into `test` with the same checks. After merging, the push
-   to `test` reruns only unit/widget tests, then deploys the consumer app to
-   `stage` and runs the Playwright smoke test. Once `stage` succeeds, create a
-   candidate tag on the HEAD of `test`: `vX.Y.Z-rc.N` (for example,
-   `v0.1.1-rc.1`). CI reruns unit/widget tests and checks the tag against the
-   version, the HEAD of `test`, and a successful `stage` check on that commit.
+   to `test` reruns unit/widget tests and starts `stage`: PBS-Java, a local DSP,
+   and an Android emulator run the full banner and click E2E. Once `stage`
+   succeeds, create a candidate tag on the HEAD of `test`: `vX.Y.Z-rc.N` (for
+   example, `v0.1.1-rc.1`). CI reruns unit/widget tests and checks the tag
+   against the version, the HEAD of `test`, and its successful `stage` check.
 4. After validating the candidate, open a PR from `test` into `main`. CI checks
-   for a successful `stage` check on the HEAD of `test` and runs unit/widget and
-   Android/iOS integration tests. Merge after the checks and review pass.
+   for successful `stage` and `candidate-tag` checks on the HEAD of `test` and
+   runs unit/widget and Android/iOS integration tests. Merge after the checks
+   and review pass.
 5. Create a release tag on the HEAD of `main`, `vX.Y.Z` (for example, `v0.1.1`),
    and push it to origin. CI reruns unit/widget tests and checks the tag against
    `pubspec.yaml` and the HEAD of `main`. After approval in the `prod`
@@ -59,13 +60,108 @@ Android/iOS integration tests run only for PRs into `dev`, `test`, and `main`.
 They do not rerun on pushes to `test` or on tag pushes, so these checks must be
 required in the GitHub rulesets for all three branches.
 
-For `stage`, set the `STAGE_URL` Environment variable and the
-`STAGE_DEPLOY_URL` and `STAGE_DEPLOY_TOKEN` secrets. The webhook must accept a
-POST request with `{"sha":"<commit>"}` and return an error if deployment fails.
-It must complete only when the application is ready at `STAGE_URL`. Playwright
-checks that the web app is available on stage. It does not test native ads;
-`integration_test` checks the Flutter/native boundary on an emulator and a
-simulator.
+`stage` is an ephemeral test environment on a GitHub runner. It starts PBS-Java
+and the synthetic local DSP in containers, then checks a rendered Android
+banner, click callback, landing-page screenshot, and auction audit. It does
+not deploy an app or expose a persistent stage URL. The `integration_test`
+also checks the Flutter/native boundary on an emulator and a simulator during
+PR validation.
+
+## Local Prebid Server fixture
+
+The `e2e/pbs` directory contains a local Prebid Server (PBS) fixture. It uses
+stored requests and a stored bid response to return the same 300×250 test
+creative on every auction, without contacting a live bidder. No DSP container
+participates in this test; the bid and HTML creative are fixture data in PBS.
+It also serves the VEON Android SDK configuration at
+`/static/e2e-config.json`, with Prebid ahead of GAM. A small audit proxy
+records aggregate auction results without
+storing device request data. Start and check it with Docker Compose and `jq`:
+
+```sh
+docker compose -f e2e/pbs/compose.yaml up -d
+bash e2e/pbs/smoke.sh
+docker compose -f e2e/pbs/compose.yaml down
+```
+
+The audit proxy listens at `http://127.0.0.1:8000` on the host and forwards
+requests to PBS. From an Android emulator, the host address is
+`http://10.0.2.2:8000`, so the auction endpoint is
+`http://10.0.2.2:8000/openrtb2/auction`. The `PBS fixture smoke` workflow can
+also be started manually from GitHub Actions. It starts PBS, verifies its
+auction response, and runs the Android Flutter integration test with the
+emulator. The test initializes the SDK against local PBS, requests the banner
+with config ID `test-imp-id`, waits for the display callback, taps the banner,
+and waits for the click callback. The ad links to a local landing page served
+by the audit proxy. The workflow captures the banner screen with ADB and checks
+the creative's background color. The screenshot and test log are uploaded as
+the `pbs-android-render` artifact. It then checks that the app fetched the local
+SDK config, received the stored PBS bid, and requested the landing page. The
+GAM demo tag
+`/21775744923/example/fixed-size-banner` is passed to the native loader as a
+fallback; the asserted creative is served by the local PBS fixture. The debug
+Android app includes the SDK's JS assets so rendering does not depend on a
+remote script host.
+
+To run the Android test locally, keep PBS running and use:
+
+```sh
+curl --fail --silent --show-error --request POST http://127.0.0.1:8000/__e2e/reset
+bash e2e/pbs/run-android-render.sh
+bash e2e/pbs/verify-app-auction.sh
+```
+
+The runner requires an Android emulator named `emulator-5554`, Flutter, ADB,
+and Java 17 or newer. The screenshot is saved at
+`e2e/pbs/artifacts/pbs-banner.png`. Android uses Flutter hybrid composition
+for the banner's WebView; the previous texture mode delivered display callbacks
+but rendered a blank area on the emulator.
+
+The normal Flutter example still uses the VEON production auction URL and
+remote configuration. The local PBS test runs as a separate test target, and
+the `PBS fixture smoke` workflow is manual rather than a required PR check.
+
+### Real DSP coverage
+
+The optional `dsp` Compose profile starts a local `veonadtech/dsp-bidder`
+test runtime alongside PBS-Java. It runs the real DSP router, campaign loader,
+targeting, and `/prebid/bid` handler using a synthetic 300×250 campaign.
+PBS-Java's generic OpenRTB adapter forwards the auction to this DSP. The test
+runtime uses in-memory test services and fixed GeoIP/Udger enrichers; it does
+not load production credentials or campaign data. Build it from a checkout of
+the private DSP repository (Go and access to its private modules are required):
+
+```sh
+bash e2e/pbs/dsp-local/build-local.sh /path/to/dsp-bidder
+docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml --profile dsp up -d
+bash e2e/pbs/dsp-local/smoke.sh
+bash e2e/pbs/java/smoke.sh
+bash e2e/pbs/dsp-local/verify-click.sh
+curl --fail --silent --show-error --request POST http://127.0.0.1:8000/__e2e/reset
+bash e2e/pbs/run-android-render.sh
+bash e2e/pbs/verify-app-auction.sh
+```
+
+The build script archives the checkout's HEAD and applies the local test
+patches in a temporary directory, leaving the DSP checkout unchanged. The
+binary is written to ignored `e2e/pbs/.build/`. The DSP smoke check requires
+a live OpenRTB response; the PBS-Java smoke check requires the same creative
+through `/openrtb2/auction`. The click check requires a redirect from the DSP
+click endpoint to the local landing page. The Android test verifies display,
+click callback, the banner's color in `pbs-banner.png`, the landing page's
+color in `pbs-landing.png`, the live DSP bid in PBS's response, and a
+landing-page request. The separate `PBS fixture smoke` workflow still uses
+PBS-Go's stored response.
+
+The `PBS and local DSP Android E2E` GitHub Actions workflow runs this full path
+automatically on every push to `test` and can also be started manually. Create
+the `stage` GitHub Environment without required reviewers so the automatic
+check can start. Configure the repository or `stage` Environment secret
+`DSP_E2E_TOKEN` with read access to `veonadtech/dsp-bidder` and its private Go
+modules. The workflow checks out a pinned DSP commit and uploads both Android
+screenshots and the test log. Its `stage` job must pass on the current `test`
+HEAD before the candidate tag and the PR into `main` can pass policy. The
+`prod` Environment remains the approval gate for the final release.
 
 Run locally with `flutter test`. On a device, run
 `cd example && flutter test integration_test/plugin_integration_test.dart -d <device-id>`.

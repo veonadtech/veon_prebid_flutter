@@ -1,0 +1,9 @@
+{
+  "id": "dsp-pbs-e2e-auction",
+  "test": 1,
+  "tmax": 5000,
+  "app": {"bundle": "com.example.pbs.e2e"},
+  "device": {"ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36", "ip": "127.0.0.1"},
+  "ext": {"prebid": {"storedrequest": {"id": "test"}}},
+  "imp": [{"id": "test-div-1", "ext": {"prebid": {"storedrequest": {"id": "test-imp-id"}}}}]
+}

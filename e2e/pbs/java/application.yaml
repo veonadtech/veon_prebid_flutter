@@ -1,0 +1,21 @@
+status-response: ok
+cache:
+  scheme: http
+  host: localhost
+  path: /cache
+  query: uuid=
+adapters:
+  generic:
+    enabled: true
+    endpoint: http://dsp:9800/prebid/bid
+settings:
+  enforce-valid-account: false
+  filesystem:
+    settings-filename: /app/prebid-server/e2e/app-settings.yaml
+    stored-requests-dir: /app/prebid-server/e2e/requests
+    stored-imps-dir: /app/prebid-server/e2e/imps
+    stored-responses-dir: /app/prebid-server/e2e/empty
+    profiles-dir: /app/prebid-server/e2e/empty
+    categories-dir: /app/prebid-server/e2e/empty
+gdpr:
+  default-value: 0

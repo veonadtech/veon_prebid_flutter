@@ -1,0 +1,35 @@
+services:
+  dsp:
+    profiles: ["dsp"]
+    image: alpine:3.20
+    platform: linux/amd64
+    working_dir: /app/tests/banner
+    command: ["/app/dsp"]
+    environment:
+      DSP_E2E_MODE: "1"
+      DSP_E2E_CAMPAIGN: /app/campaign.json
+    ports:
+      - "127.0.0.1:9800:9800"
+    volumes:
+      - ./.build/dsp-e2e:/app/dsp:ro
+      - ./dsp-local/campaign.json:/app/campaign.json:ro
+      - ./dsp-local/config.yaml:/app/tests/test_config.yaml:ro
+  pbs:
+    image: prebid/prebid-server:v4.9.0
+    platform: linux/amd64
+    volumes:
+      - ./pbs.yaml:/usr/local/bin/pbs.yaml:ro
+      - ./stored-imp.json:/usr/local/bin/stored_requests/data/by_id/stored_imps/test-imp-id.json:ro
+      - ./stored-request.json:/usr/local/bin/stored_requests/data/by_id/stored_requests/test.json:ro
+      - ./stored-bid.json:/usr/local/bin/stored_responses/data/by_id/stored_responses/test-bid-id.json:ro
+      - ./sdk-config.json:/usr/local/bin/static/e2e-config.json:ro
+  audit:
+    image: python:3.12-alpine
+    depends_on:
+      - pbs
+    command: ["python", "/app/proxy.py"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./proxy.py:/app/proxy.py:ro
+      - ./sdk-config.json:/app/sdk-config.json:ro

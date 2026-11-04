@@ -1,0 +1,21 @@
+{
+  "id": "test-auction-id",
+  "test": 1,
+  "tmax": 500,
+  "app": { "bundle": "com.example.pbs.e2e" },
+  "ext": {
+    "prebid": {
+      "storedrequest": { "id": "test" }
+    }
+  },
+  "imp": [
+    {
+      "id": "test-div-1",
+      "ext": {
+        "prebid": {
+          "storedrequest": { "id": "test-imp-id" }
+        }
+      }
+    }
+  ]
+}

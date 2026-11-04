@@ -42,6 +42,7 @@ class SetupadPrebidFlutterPlugin : FlutterPlugin, ActivityAware {
                         prebidHost, configHost, prebidAccountID,
                         timeoutMillis, pbsDebug, externalBrowser
                     )
+                    result.success(null)
                 } else {
                     result.notImplemented()
                 }
