@@ -20,7 +20,7 @@ if [[ "$status" != 302 ]]; then
   echo "Expected DSP click redirect 302, got $status" >&2
   exit 1
 fi
-if ! rg -qi '^location: http://10\.0\.2\.2:8000/__e2e/landing\r?$' "$headers"; then
+if ! tr -d '\r' < "$headers" | grep -Eqi '^location: http://10\.0\.2\.2:8000/__e2e/landing$'; then
   echo "DSP click did not redirect to the local landing page" >&2
   exit 1
 fi
