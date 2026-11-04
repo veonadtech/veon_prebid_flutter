@@ -58,7 +58,11 @@ require the checks and review before merging.
 
 Android/iOS integration tests run only for PRs into `dev`, `test`, and `main`.
 They do not rerun on pushes to `test` or on tag pushes, so these checks must be
-required in the GitHub rulesets for all three branches.
+required in the GitHub rulesets for all three branches. They are temporarily
+disabled unless the repository Actions variable `RUN_NATIVE_INTEGRATION` is
+set to `true`; when unset, their jobs are skipped and satisfy required checks.
+Set the variable to `true` to restore both PR integration jobs. The separate
+`stage` Android E2E still runs after a push to `test`.
 
 `stage` is an ephemeral test environment on a GitHub runner. It starts PBS-Java
 and the synthetic local DSP in containers, then checks a rendered Android

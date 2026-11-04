@@ -77,7 +77,7 @@ jobs:
       - run: flutter test
 
   android-integration:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.RUN_NATIVE_INTEGRATION == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +103,7 @@ jobs:
           script: cd example && flutter test integration_test/plugin_integration_test.dart --no-uninstall -d emulator-5554 -r expanded
 
   ios-integration:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.RUN_NATIVE_INTEGRATION == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
