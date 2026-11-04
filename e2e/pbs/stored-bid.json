@@ -1,0 +1,33 @@
+{
+  "id": "test-auction-id",
+  "seatbid": [
+    {
+      "seat": "pubmatic",
+      "bid": [
+        {
+          "id": "test-bid-id",
+          "impid": "test-div-1",
+          "price": 1,
+          "adm": "<a href=\"http://10.0.2.2:8000/__e2e/landing\" style=\"width:300px;height:250px;background:#142c42;color:white;font:24px sans-serif;display:grid;place-items:center;text-decoration:none\">PBS test ad</a>",
+          "adomain": ["example.test"],
+          "crid": "pbs-test-creative",
+          "w": 300,
+          "h": 250,
+          "mtype": 1,
+          "ext": {
+            "prebid": {
+              "meta": { "adaptercode": "pubmatic" },
+              "targeting": {
+                "hb_bidder": "pubmatic",
+                "hb_pb": "1.00",
+                "hb_size": "300x250"
+              },
+              "type": "banner"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "cur": "USD"
+}

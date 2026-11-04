@@ -1,0 +1,6 @@
+{
+  "isActive": false,
+  "level": "DEBUG",
+  "sdkType": ["PREBID", "GAM"],
+  "priority": ["PREBID", "GAM"]
+}

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:setupad_prebid_flutter/ad_type.dart';
 import 'package:setupad_prebid_flutter/event_listener.dart';
@@ -99,9 +101,26 @@ class _PrebidAdState extends State<PrebidAd> {
         return SizedBox(
           width: w,
           height: h,
-          child: AndroidView(
+          child: PlatformViewLink(
             viewType: 'setupad.plugin.setupad_prebid_flutter',
-            onPlatformViewCreated: _onAndroidViewCreated,
+            surfaceFactory: (context, controller) => AndroidViewSurface(
+              controller: controller as AndroidViewController,
+              gestureRecognizers: const <Factory<
+                  OneSequenceGestureRecognizer>>{},
+              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+            ),
+            onCreatePlatformView: (params) {
+              final controller = PlatformViewsService.initExpensiveAndroidView(
+                id: params.id,
+                viewType: params.viewType,
+                layoutDirection: Directionality.of(context),
+              );
+              controller
+                  .addOnPlatformViewCreatedListener(_onAndroidViewCreated);
+              return controller
+                ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+                ..create();
+            },
           ),
         );
       case TargetPlatform.iOS:
@@ -114,13 +133,15 @@ class _PrebidAdState extends State<PrebidAd> {
           ),
         );
       default:
-        return Text('$defaultTargetPlatform is not yet supported by the plugin');
+        return Text(
+            '$defaultTargetPlatform is not yet supported by the plugin');
     }
   }
 
   /// Android: create channel, send params, attach controller, set callbacks.
   void _onAndroidViewCreated(int id) {
-    final channel = MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel_$id');
+    final channel =
+        MethodChannel('setupad.plugin.setupad_prebid_flutter/myChannel_$id');
     _wireChannel(channel);
     _sendParams(channel);
   }

@@ -1,0 +1,22 @@
+diff --git a/path/manager.go b/path/manager.go
+index dc6f69f..510561c 100644
+--- a/path/manager.go
++++ b/path/manager.go
+@@ -1,6 +1,8 @@
+ package path
+ 
+ import (
++	"os"
++
+ 	"github.com/veonadtech/dsp-bidder/network"
+ )
+ 
+@@ -84,7 +86,7 @@ func (m Manager) CookieHandleLink(network string, secure bool, encodedBidId stri
+ 
+ func build(host, path, query string, isSecure bool) string {
+ 	schema := "http://"
+-	if isSecure {
++	if isSecure && os.Getenv("DSP_E2E_MODE") != "1" {
+ 		schema = "https://"
+ 	}
+ 	if query != "" {
