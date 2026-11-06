@@ -125,6 +125,11 @@ jobs:
           sudo tar -xzf "$RUNNER_TEMP/lima.tar.gz" -C /usr/local
           curl -fsSL -o "$RUNNER_TEMP/colima" https://github.com/abiosoft/colima/releases/download/v0.10.3/colima-Darwin-x86_64
           sudo install -m 755 "$RUNNER_TEMP/colima" /usr/local/bin/colima
+      - name: Cache Lima VM image downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/lima
+          key: macos-15-intel-lima-2.2.1-colima-0.10.3
       - name: Start Colima
         run: colima start --cpu 2 --memory 4 --disk 20 --arch x86_64 --vm-type vz --mount-type virtiofs
       - name: Check iOS runner tools
@@ -162,6 +167,8 @@ jobs:
       - uses: flutter-actions/setup-flutter@v4
         with:
           channel: stable
+          cache: true
+          cache-sdk: true
       - name: Boot iOS simulator
         run: |
           DEVICE="$(xcrun simctl list --json devices booted | jq -r '[.devices[][] | select(.state == "Booted" and (.name | startswith("iPhone"))) | .udid][0] // empty')"
