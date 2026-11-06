@@ -2,7 +2,7 @@ name: PBS and local DSP E2E
 
 on:
   push:
-    branches: [test]
+    branches: [test, feature/AD-1698-ci-cd-and-tests]
   workflow_dispatch:
 
 permissions:
@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   stage:
+    if: github.ref_name != 'feature/AD-1698-ci-cd-and-tests'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
@@ -134,6 +135,12 @@ jobs:
           done
           docker info >/dev/null
           docker compose version
+      - name: Select Xcode 26
+        run: |
+          XCODE_APP="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -n 1)"
+          test -n "$XCODE_APP" || { echo "Xcode 26 is not installed" >&2; exit 1; }
+          sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
+          xcodebuild -version
       - uses: actions/checkout@v4
         with:
           repository: veonadtech/dsp-bidder
@@ -170,6 +177,7 @@ jobs:
         shell: bash
         env:
           TMPDIR: ${{ runner.temp }}
+          PBS_IOS_VERBOSE: '1'
         run: bash e2e/pbs/run-ios-render.sh "$DEVICE" 2>&1 | tee "$RUNNER_TEMP/pbs-ios-e2e.log"
       - name: Upload iOS E2E result and log
         if: always()

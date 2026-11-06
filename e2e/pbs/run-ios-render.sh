@@ -15,9 +15,11 @@ derived_data="${run_dir}/DerivedData"
 result_bundle="${run_dir}/Result.xcresult"
 trap 'if [[ -d "$result_bundle" ]]; then echo "iOS E2E result: $result_bundle"; fi' EXIT
 
-(cd "${repo_root}/example" && \
-  flutter build ios --simulator --debug \
-    --target lib/pbs_ios_e2e.dart)
+flutter_build_args=(build ios --simulator --debug --target lib/pbs_ios_e2e.dart)
+if [[ "${PBS_IOS_VERBOSE:-0}" == 1 ]]; then
+  flutter_build_args+=(--verbose)
+fi
+(cd "${repo_root}/example" && flutter "${flutter_build_args[@]}")
 
 (cd "${repo_root}" && \
   docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml \

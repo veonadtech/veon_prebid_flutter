@@ -184,8 +184,8 @@ automatically on every push to `test` and can also be started manually. The
 `stage-ios` job installs Docker CLI and Compose with Homebrew auto-update and
 cleanup disabled, restores cached Homebrew downloads, installs Lima and Colima
 from pinned release binaries, and limits the Colima VM to 4 GiB RAM and 2 CPUs.
-It installs Flutter and Go through Actions and boots an available iPhone
-simulator. This hosted runner has 14 GiB RAM;
+It selects Xcode 26 explicitly, installs Flutter and Go through Actions, and
+boots an available iPhone simulator. This hosted runner has 14 GiB RAM;
 the full iOS job still needs a successful CI run to establish whether the
 simulator, Xcode, PBS, and DSP fit together. GitHub has announced that the
 `macos-15-intel` image is available until August 2027. Create the `stage`
