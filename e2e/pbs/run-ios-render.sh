@@ -45,7 +45,7 @@ for attempt in {1..60}; do
   fi
   sleep 1
 done
-bash "${script_dir}/java/smoke.sh"
+PBS_READY_TIMEOUT_SECONDS=300 bash "${script_dir}/java/smoke.sh"
 
 (cd "${repo_root}/example/ios" && \
   xcodebuild -workspace Runner.xcworkspace -scheme Runner \

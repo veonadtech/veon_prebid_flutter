@@ -5,12 +5,11 @@ script_dir=$(cd "$(dirname "$0")" && pwd)
 response=$(mktemp "${TMPDIR:-/tmp}/pbs-dsp-auction.XXXXXX")
 trap 'rm -f "$response"' EXIT
 
-for attempt in {1..90}; do
-  if curl --fail --silent --max-time 2 http://127.0.0.1:8000/status > /dev/null; then
-    break
-  fi
-  if (( attempt == 90 )); then
-    echo "PBS-Java did not become ready within 90 seconds" >&2
+ready_timeout_seconds=${PBS_READY_TIMEOUT_SECONDS:-90}
+ready_deadline=$((SECONDS + ready_timeout_seconds))
+until curl --fail --silent --max-time 2 http://127.0.0.1:8000/status > /dev/null; do
+  if (( SECONDS >= ready_deadline )); then
+    echo "PBS-Java did not become ready within ${ready_timeout_seconds} seconds" >&2
     exit 1
   fi
   sleep 1
