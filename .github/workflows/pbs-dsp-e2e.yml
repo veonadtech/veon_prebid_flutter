@@ -2,7 +2,7 @@ name: PBS and local DSP E2E
 
 on:
   push:
-    branches: [test]
+    branches: [test, feature/AD-1698-ci-cd-and-tests]
   workflow_dispatch:
 
 permissions:
@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   stage:
+    if: github.ref_name != 'feature/AD-1698-ci-cd-and-tests'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
