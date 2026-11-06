@@ -47,12 +47,19 @@ for attempt in {1..60}; do
 done
 if ! PBS_READY_TIMEOUT_SECONDS=300 bash "${script_dir}/java/smoke.sh"; then
   echo "PBS-Java diagnostics after readiness failure:" >&2
+  echo "Audit /status response:" >&2
+  curl --silent --show-error --max-time 5 -i http://127.0.0.1:8000/status >&2 || true
   (cd "${repo_root}" && "${compose[@]}" ps -a) >&2 || true
   pbs_id=$(cd "${repo_root}" && "${compose[@]}" ps -q pbs || true)
   if [[ -n "$pbs_id" ]]; then
     docker inspect --format \
       'PBS state: status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} started={{.State.StartedAt}}' \
       "$pbs_id" >&2 || true
+    echo "Requesting two PBS-Java thread dumps, five seconds apart:" >&2
+    docker kill --signal=QUIT "$pbs_id" >&2 || true
+    sleep 5
+    docker kill --signal=QUIT "$pbs_id" >&2 || true
+    sleep 2
   fi
   docker stats --no-stream --format \
     'Container: {{.Name}} CPU: {{.CPUPerc}} Memory: {{.MemUsage}}' >&2 || true
