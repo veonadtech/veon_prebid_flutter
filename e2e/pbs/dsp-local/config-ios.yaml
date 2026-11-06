@@ -1,0 +1,27 @@
+server:
+  name: bidder-e2e
+  bind: 0.0.0.0:9800
+  impression_host: 127.0.0.1:8000
+  vast_host: 127.0.0.1:8000
+log:
+  main:
+    type: stdout
+  request:
+    type: stdout
+sampling:
+  empty_bids: 1
+  losing_bids: 1
+datasource:
+  redis:
+    counters:
+      host: 127.0.0.1
+      port: 6379
+services:
+  cookie_sync:
+    dmp_host: localhost
+    script_urn: /sync
+    stable_match_url: http://localhost/sync
+google:
+  enc_key: ""
+  int_key: ""
+  dicts_path: /app/reference_tables

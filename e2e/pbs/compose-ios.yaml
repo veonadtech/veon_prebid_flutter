@@ -1,0 +1,5 @@
+services:
+  dsp:
+    volumes:
+      - ./dsp-local/campaign-ios.json:/app/campaign.json:ro
+      - ./dsp-local/config-ios.yaml:/app/tests/test_config.yaml:ro

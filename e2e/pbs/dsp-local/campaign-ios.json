@@ -1,0 +1,36 @@
+{
+  "1": {
+    "agency_settings": {
+      "id": "1", "name": "E2E", "budget": 1000000,
+      "agency_discrep": 1, "ssp_commission": 1,
+      "agency_commission": 1, "advertiser_commission": 1
+    },
+    "advertisers": {
+      "1": {"id": "1", "name": "E2E advertiser", "agency_id": 1, "adomain": "example.test"}
+    },
+    "campaigns": {
+      "1": {
+        "id": "1", "name": "E2E banner", "advertiser_id": "1",
+        "inactive": false,
+        "start_date": "2024-01-01T00:00:00+00:00",
+        "stop_date": "2099-01-01T00:00:00+00:00",
+        "type": "standard", "adomain": "example.test",
+        "budget": {"daily": 1000, "total": 1000000},
+        "pricing": {"bid": 2, "impression": 2, "currency": "USD", "strategy": "MAX_CPM", "pace": "asap"},
+        "targeting": {"network": {"list": ["e2e-banner"]}},
+        "landing_page_url": ["http://127.0.0.1:8000/__e2e/landing"],
+        "creatives": ["1"],
+        "click_url_priority": "creative"
+      }
+    },
+    "creatives": {
+      "1": {
+        "id": "1", "name": "E2E 300x250", "advertiser_id": "1",
+        "moderation": {"inhouse": {"status": "approved"}},
+        "size": {"width": 300, "height": 250},
+        "click_url": "http://127.0.0.1:8000/__e2e/landing",
+        "html_content": "<a href=\"http://127.0.0.1:8000/__e2e/landing\"><div style=\"width:300px;height:250px;background:#142c42;color:white\">DSP E2E banner</div></a>"
+      }
+    }
+  }
+}

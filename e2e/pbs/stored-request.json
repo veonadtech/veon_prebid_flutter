@@ -1,5 +1,11 @@
 {
   "app": {
     "publisher": { "id": "test" }
+  },
+  "ext": {
+    "prebid": {
+      "targeting": { "includewinners": true },
+      "cache": { "bids": {} }
+    }
   }
 }

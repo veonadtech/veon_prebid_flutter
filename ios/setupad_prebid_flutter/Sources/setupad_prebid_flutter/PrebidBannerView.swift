@@ -69,11 +69,13 @@ class PrebidBannerView: NSObject {
 
         super.init()
 
+
         channel.setMethodCallHandler { [weak self] (call, result) in
             guard let self = self else { return }
             self.handleMethodCall(call, result: result)
         }
     }
+
 
     // MARK: - Deinit
 
@@ -393,6 +395,7 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
 
     func bannerViewDidRecordImpression(_ bannerView: PrebidMobile.BannerView) {
         NSLog("LOG: Banner did record impression")
+        channel.invokeMethod("onAdDisplayed", arguments: bannerView.configID)
     }
 
     func bannerViewWillLeaveApplication(_ bannerView: PrebidMobile.BannerView) {
@@ -403,7 +406,7 @@ extension PrebidBannerView: PrebidMobile.BannerViewDelegate {
 
     func bannerViewWillPresentModal(_ bannerView: PrebidMobile.BannerView) {
         let configId = bannerView.configID
-        channel.invokeMethod("onAdDisplayed", arguments: configId)
+        channel.invokeMethod("onAdClicked", arguments: configId)
     }
 
 }

@@ -1,8 +1,8 @@
-name: PBS and local DSP Android E2E
+name: PBS and local DSP E2E
 
 on:
   push:
-    branches: [test]
+    branches: [test, feature/AD-1698-ci-cd-and-tests]
   workflow_dispatch:
 
 permissions:
@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   stage:
+    if: github.ref_name != 'feature/AD-1698-ci-cd-and-tests'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
@@ -88,3 +89,87 @@ jobs:
       - name: Stop containers
         if: always()
         run: docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml --profile dsp down
+
+  stage-ios:
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    environment:
+      name: stage
+      deployment: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check DSP access token
+        env:
+          DSP_E2E_TOKEN: ${{ secrets.DSP_E2E_TOKEN }}
+        run: |
+          if [[ -z "$DSP_E2E_TOKEN" ]]; then
+            echo "Configure DSP_E2E_TOKEN with read access to dsp-bidder and its private Go modules" >&2
+            exit 1
+          fi
+      - name: Set up Docker with Colima
+        uses: douglascamata/setup-docker-macos-action@d5ccc6aae0ce23e7700154f5e63cc53e6433ac48 # v1.1.0
+        with:
+          lima: v2.2.1
+          colima: v0.10.3
+          colima-additional-options: --memory 4 --cpu 2 --disk 20
+      - name: Check iOS runner tools
+        run: |
+          for tool in docker xcodebuild xcrun jq; do
+            command -v "$tool" >/dev/null || { echo "Missing $tool on stage-ios runner" >&2; exit 1; }
+          done
+          docker info >/dev/null
+          docker compose version
+      - uses: actions/checkout@v4
+        with:
+          repository: veonadtech/dsp-bidder
+          ref: 1784190a80f317ae1761fe5b1ef90fd93fddd4f6
+          path: dsp-bidder
+          token: ${{ secrets.DSP_E2E_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - name: Build synthetic DSP runtime
+        env:
+          DSP_E2E_TOKEN: ${{ secrets.DSP_E2E_TOKEN }}
+        run: |
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="url.https://x-access-token:${DSP_E2E_TOKEN}@github.com/.insteadOf"
+          export GIT_CONFIG_VALUE_0="https://github.com/"
+          bash e2e/pbs/dsp-local/build-local.sh dsp-bidder
+          go clean -cache -modcache
+      - uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+      - name: Boot iOS simulator
+        run: |
+          DEVICE="$(xcrun simctl list --json devices booted | jq -r '[.devices[][] | select(.state == "Booted" and (.name | startswith("iPhone"))) | .udid][0] // empty')"
+          if [[ -z "$DEVICE" ]]; then
+            DEVICE="$(xcrun simctl list --json devices available | jq -r '[.devices[][] | select(.name | startswith("iPhone")) | .udid][0] // empty')"
+            test -n "$DEVICE" || { echo "No iPhone simulator is available" >&2; exit 1; }
+            xcrun simctl boot "$DEVICE"
+          fi
+          xcrun simctl bootstatus "$DEVICE" -b
+          echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"
+      - name: Run iOS banner and click E2E
+        shell: bash
+        env:
+          TMPDIR: ${{ runner.temp }}
+        run: bash e2e/pbs/run-ios-render.sh "$DEVICE" 2>&1 | tee "$RUNNER_TEMP/pbs-ios-e2e.log"
+      - name: Upload iOS E2E result and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pbs-dsp-ios-render
+          path: |
+            ${{ runner.temp }}/pbs-ios-e2e.*/Result.xcresult
+            ${{ runner.temp }}/pbs-ios-e2e.log
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml -f e2e/pbs/compose-ios.yaml --profile dsp logs --tail 120 pbs dsp audit
+      - name: Stop containers
+        if: always()
+        run: docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml -f e2e/pbs/compose-ios.yaml --profile dsp down

@@ -3,9 +3,11 @@
 import json
 import os
 import threading
+import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
@@ -22,11 +24,21 @@ class NoRedirect(HTTPRedirectHandler):
 
 opener = build_opener(NoRedirect)
 lock = threading.Lock()
-metrics = {"auctions": 0, "matching": 0, "bid_found": 0, "config_fetches": 0, "landing_hits": 0, "last_status": None}
+metrics = {"auctions": 0, "matching": 0, "bid_found": 0, "config_fetches": 0, "landing_hits": 0, "ready": 0, "last_status": None, "last_request_targeting": None, "last_bid_targeting": None}
+cached_bids = {}
 
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if urlsplit(self.path).path == "/cache":
+            cache_id = parse_qs(urlsplit(self.path).query).get("uuid", [None])[0]
+            with lock:
+                cached = cached_bids.get(cache_id)
+            if cached and cached[2] > time.time():
+                self.respond(200, cached[0], cached[1])
+            else:
+                self.respond(404, b"not found", "text/plain")
+            return
         if urlsplit(self.path).path == "/static/e2e-config.json":
             with open("/app/sdk-config.json", "rb") as config_file:
                 config = config_file.read()
@@ -46,12 +58,46 @@ class Handler(BaseHTTPRequestHandler):
         self.forward()
 
     def do_POST(self):
+        if self.path == "/__e2e/ready":
+            with lock:
+                metrics["ready"] += 1
+            self.respond(200, b"ok", "text/plain")
+            return
+        if urlsplit(self.path).path == "/cache":
+            self.store_bids()
+            return
         if self.path == "/__e2e/reset":
             with lock:
-                metrics.update(auctions=0, matching=0, bid_found=0, config_fetches=0, landing_hits=0, last_status=None)
+                metrics.update(auctions=0, matching=0, bid_found=0, config_fetches=0, landing_hits=0, ready=0, last_status=None, last_request_targeting=None, last_bid_targeting=None)
             self.respond(200, b"ok", "text/plain")
             return
         self.forward()
+
+    def store_bids(self):
+        try:
+            size = int(self.headers.get("Content-Length", "0"))
+            if size <= 0 or size > 1_000_000:
+                raise ValueError("invalid body size")
+            puts = json.loads(self.rfile.read(size))["puts"]
+            if not isinstance(puts, list) or not puts:
+                raise ValueError("puts must be a nonempty list")
+            responses = []
+            for item in puts:
+                kind = item["type"]
+                if kind not in ("json", "xml"):
+                    raise ValueError("unsupported cache type")
+                value = item["value"]
+                body = value.encode() if isinstance(value, str) else json.dumps(value).encode()
+                if not body:
+                    raise ValueError("empty cache value")
+                cache_id = str(uuid.uuid4())
+                expiry = time.time() + int(item.get("ttlseconds", 300))
+                with lock:
+                    cached_bids[cache_id] = (body, "application/json" if kind == "json" else "application/xml", expiry)
+                responses.append({"uuid": cache_id})
+            self.respond(200, json.dumps({"responses": responses}).encode(), "application/json")
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+            self.respond(400, b"invalid cache request", "text/plain")
 
     def forward(self):
         path = urlsplit(self.path).path
@@ -92,6 +138,8 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     auction = json.loads(request_body)
                     response = json.loads(body)
+                    metrics["last_request_targeting"] = auction.get("ext", {}).get("prebid", {}).get("targeting")
+                    metrics["last_bid_targeting"] = next((bid.get("ext", {}).get("prebid", {}).get("targeting") for seat in response.get("seatbid", []) for bid in seat.get("bid", [])), None)
                     matching = any(
                         imp.get("ext", {}).get("prebid", {}).get("storedrequest", {}).get("id")
                         == "test-imp-id"

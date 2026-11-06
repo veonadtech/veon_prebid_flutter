@@ -31,7 +31,7 @@ require at least one approval, require all review conversations to be resolved,
 and require the `policy`, `unit`, `android-integration`, and `ios-integration`
 checks from the `Flutter adapter CI` workflow. The `policy` check accepts PRs
 into `test` only from `dev`, and PRs into `main` only from `test` with
-successful `stage` and `candidate-tag` checks on the HEAD of `test`. Configure
+successful `stage`, `stage-ios`, and `candidate-tag` checks on the HEAD of `test`. Configure
 the `prod` GitHub Environment with a required reviewer. GitHub rulesets must
 require the checks and review before merging.
 
@@ -41,13 +41,13 @@ require the checks and review before merging.
    integration.
 2. Update `version` in `pubspec.yaml` to `X.Y.Z` through a PR into `dev`.
 3. Open a PR from `dev` into `test` with the same checks. After merging, the push
-   to `test` reruns unit/widget tests and starts `stage`: PBS-Java, a local DSP,
-   and an Android emulator run the full banner and click E2E. Once `stage`
-   succeeds, create a candidate tag on the HEAD of `test`: `vX.Y.Z-rc.N` (for
+   to `test` reruns unit/widget tests and starts `stage` and `stage-ios`:
+   PBS-Java and a local DSP run full banner and click E2E on Android and iOS.
+   Once both checks succeed, create a candidate tag on the HEAD of `test`: `vX.Y.Z-rc.N` (for
    example, `v0.1.1-rc.1`). CI reruns unit/widget tests and checks the tag
-   against the version, the HEAD of `test`, and its successful `stage` check.
+   against the version, the HEAD of `test`, and its successful stage checks.
 4. After validating the candidate, open a PR from `test` into `main`. CI checks
-   for successful `stage` and `candidate-tag` checks on the HEAD of `test` and
+   for successful `stage`, `stage-ios`, and `candidate-tag` checks on the HEAD of `test` and
    runs unit/widget and Android/iOS integration tests. Merge after the checks
    and review pass.
 5. Create a release tag on the HEAD of `main`, `vX.Y.Z` (for example, `v0.1.1`),
@@ -62,12 +62,12 @@ required in the GitHub rulesets for all three branches. They are temporarily
 disabled unless the repository Actions variable `RUN_NATIVE_INTEGRATION` is
 set to `true`; when unset, their jobs are skipped and satisfy required checks.
 Set the variable to `true` to restore both PR integration jobs. The separate
-`stage` Android E2E still runs after a push to `test`.
+`stage` Android and `stage-ios` iOS E2E jobs still run after a push to `test`.
 
-`stage` is an ephemeral test environment on a GitHub runner. It starts PBS-Java
-and the synthetic local DSP in containers, then checks a rendered Android
-banner, click callback, landing-page screenshot, and auction audit. It does
-not deploy an app or expose a persistent stage URL. The `integration_test`
+The stage environment uses an Ubuntu runner for Android and a GitHub-hosted
+`macos-15-intel` runner for iOS. Each job starts PBS-Java and the synthetic local DSP in
+containers, then checks the rendered banner, click, landing page, and auction
+audit. It does not deploy an app or expose a persistent stage URL. The `integration_test`
 also checks the Flutter/native boundary on an emulator and a simulator during
 PR validation.
 
@@ -157,14 +157,43 @@ color in `pbs-landing.png`, the live DSP bid in PBS's response, and a
 landing-page request. The separate `PBS fixture smoke` workflow still uses
 PBS-Go's stored response.
 
-The `PBS and local DSP Android E2E` GitHub Actions workflow runs this full path
-automatically on every push to `test` and can also be started manually. Create
-the `stage` GitHub Environment without required reviewers so the automatic
-check can start. Configure the repository or `stage` Environment secret
+For the iOS simulator, use the same PBS-Java and local DSP with the iOS Compose
+override. It changes the DSP creative, landing page, and impression URLs from
+the Android emulator host `10.0.2.2` to `127.0.0.1`. The dedicated Flutter
+fixture in `example/lib/pbs_ios_e2e.dart` loads the 300×250 banner and marks it
+ready through the audit proxy after `showBanner()`. `RunnerUITests` then taps the
+center of the creative and checks for the DSP bid and landing-page request.
+The Xcode result bundle contains screenshots before and after the tap. Boot an
+iOS simulator, then run:
+
+```sh
+bash e2e/pbs/run-ios-render.sh
+```
+
+The runner builds the Flutter app before starting the PBS and DSP containers,
+so the build does not compete with the local DSP for VM memory. It waits for
+the DSP to listen before checking the live bid. The iOS runner needs Flutter,
+Xcode, Docker, `jq`, the local DSP binary in
+`e2e/pbs/.build/dsp-e2e`, and a booted simulator. Pass a simulator ID to the
+runner if more than one is booted. The result bundle path is printed when the
+test finishes. The same script runs in the `stage-ios` job after a push to
+`test` and through manual workflow dispatch.
+
+The `PBS and local DSP E2E` GitHub Actions workflow runs both platform paths
+automatically on every push to `test` and can also be started manually. The
+`stage-ios` job installs Docker with Colima on the hosted Intel runner, limits
+the Colima VM to 4 GiB RAM and 2 CPUs, installs Flutter and Go through Actions,
+and boots an available iPhone simulator. This hosted runner has 14 GiB RAM;
+the full iOS job still needs a successful CI run to establish whether the
+simulator, Xcode, PBS, and DSP fit together. GitHub has announced that the
+`macos-15-intel` image is available until August 2027. Create the `stage`
+GitHub Environment without required reviewers so the automatic checks can
+start. Configure the repository or `stage` Environment secret
 `DSP_E2E_TOKEN` with read access to `veonadtech/dsp-bidder` and its private Go
-modules. The workflow checks out a pinned DSP commit and uploads both Android
-screenshots and the test log. Its `stage` job must pass on the current `test`
-HEAD before the candidate tag and the PR into `main` can pass policy. The
+modules. The workflow checks out a pinned DSP commit and uploads Android
+screenshots plus the iOS Xcode result bundle and test log. Both `stage` and
+`stage-ios` must pass on the current `test` HEAD before the candidate tag and
+the PR into `main` can pass policy. The
 `prod` Environment remains the approval gate for the final release.
 
 Run locally with `flutter test`. On a device, run

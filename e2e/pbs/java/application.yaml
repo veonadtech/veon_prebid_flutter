@@ -1,9 +1,13 @@
 status-response: ok
 cache:
   scheme: http
-  host: localhost
+  host: 127.0.0.1:8000
   path: /cache
   query: uuid=
+  internal:
+    scheme: http
+    host: audit:8000
+    path: /cache
 adapters:
   generic:
     enabled: true
