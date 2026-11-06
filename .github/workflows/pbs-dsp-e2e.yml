@@ -131,7 +131,7 @@ jobs:
           path: ~/Library/Caches/lima
           key: macos-15-intel-lima-2.2.1-colima-0.10.3
       - name: Start Colima
-        run: colima start --cpu 2 --memory 4 --disk 20 --arch x86_64 --vm-type vz --mount-type virtiofs
+        run: colima start --cpu 3 --memory 6 --disk 20 --arch x86_64 --vm-type vz --mount-type virtiofs
       - name: Check iOS runner tools
         run: |
           for tool in docker xcodebuild xcrun jq; do

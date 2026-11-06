@@ -45,7 +45,20 @@ for attempt in {1..60}; do
   fi
   sleep 1
 done
-PBS_READY_TIMEOUT_SECONDS=300 bash "${script_dir}/java/smoke.sh"
+if ! PBS_READY_TIMEOUT_SECONDS=600 bash "${script_dir}/java/smoke.sh"; then
+  echo "PBS-Java diagnostics after readiness failure:" >&2
+  (cd "${repo_root}" && "${compose[@]}" ps -a) >&2 || true
+  pbs_id=$(cd "${repo_root}" && "${compose[@]}" ps -q pbs || true)
+  if [[ -n "$pbs_id" ]]; then
+    docker inspect --format \
+      'PBS state: status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} started={{.State.StartedAt}}' \
+      "$pbs_id" >&2 || true
+  fi
+  docker stats --no-stream --format \
+    'Container: {{.Name}} CPU: {{.CPUPerc}} Memory: {{.MemUsage}}' >&2 || true
+  (cd "${repo_root}" && "${compose[@]}" logs --no-color --timestamps pbs) >&2 || true
+  exit 1
+fi
 
 (cd "${repo_root}/example/ios" && \
   xcodebuild -workspace Runner.xcworkspace -scheme Runner \
