@@ -21,15 +21,26 @@ if [[ "${PBS_IOS_VERBOSE:-0}" == 1 ]]; then
 fi
 (cd "${repo_root}/example" && flutter "${flutter_build_args[@]}")
 
-(cd "${repo_root}" && \
-  docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml \
-    -f e2e/pbs/compose-ios.yaml --profile dsp up -d)
+compose=(docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml \
+  -f e2e/pbs/compose-ios.yaml --profile dsp)
+(cd "${repo_root}" && "${compose[@]}" up -d)
 for attempt in {1..60}; do
   if curl --silent --max-time 2 -o /dev/null http://127.0.0.1:9800/prebid/bid; then
     break
   fi
   if (( attempt == 60 )); then
     echo "Local DSP did not become ready within 60 seconds" >&2
+    (cd "${repo_root}" && "${compose[@]}" ps) >&2 || true
+    (cd "${repo_root}" && "${compose[@]}" port dsp 9800) >&2 || true
+    echo "DSP response inside container:" >&2
+    (cd "${repo_root}" && "${compose[@]}" exec -T dsp \
+      wget -S -O /dev/null http://127.0.0.1:9800/prebid/bid) >&2 || true
+    echo "DSP response from host:" >&2
+    curl --verbose --max-time 5 -o /dev/null \
+      http://127.0.0.1:9800/prebid/bid >&2 || true
+    if command -v colima >/dev/null; then
+      colima status >&2 || true
+    fi
     exit 1
   fi
   sleep 1
