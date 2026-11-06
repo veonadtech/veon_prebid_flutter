@@ -45,7 +45,7 @@ for attempt in {1..60}; do
   fi
   sleep 1
 done
-if ! PBS_READY_TIMEOUT_SECONDS=600 bash "${script_dir}/java/smoke.sh"; then
+if ! PBS_READY_TIMEOUT_SECONDS=300 bash "${script_dir}/java/smoke.sh"; then
   echo "PBS-Java diagnostics after readiness failure:" >&2
   (cd "${repo_root}" && "${compose[@]}" ps -a) >&2 || true
   pbs_id=$(cd "${repo_root}" && "${compose[@]}" ps -q pbs || true)
