@@ -1,4 +1,6 @@
 status-response: ok
+vertx:
+  init-timeout-ms: 60000
 cache:
   scheme: http
   host: 127.0.0.1:8000
@@ -12,6 +14,9 @@ adapters:
   generic:
     enabled: true
     endpoint: http://dsp:9800/prebid/bid
+currency-converter:
+  external-rates:
+    enabled: false
 settings:
   enforce-valid-account: false
   filesystem:
