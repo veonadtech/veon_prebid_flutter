@@ -23,9 +23,8 @@ fi
 
 compose=(docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml \
   -f e2e/pbs/compose-ios.yaml --profile dsp)
-(cd "${repo_root}" && "${compose[@]}" up -d)
-if ! PBS_READY_TIMEOUT_SECONDS=300 bash "${script_dir}/java/smoke.sh"; then
-  echo "PBS/DSP diagnostics after smoke failure:" >&2
+diagnose_pbs_failure() {
+  echo "PBS/DSP diagnostics after readiness or smoke failure:" >&2
   echo "Audit /status response:" >&2
   curl --silent --show-error --max-time 5 -i http://127.0.0.1:8000/status >&2 || true
   echo "DSP response from host:" >&2
@@ -45,6 +44,32 @@ if ! PBS_READY_TIMEOUT_SECONDS=300 bash "${script_dir}/java/smoke.sh"; then
   docker stats --no-stream --format \
     'Container: {{.Name}} CPU: {{.CPUPerc}} Memory: {{.MemUsage}}' >&2 || true
   (cd "${repo_root}" && "${compose[@]}" logs --no-color --timestamps pbs) >&2 || true
+}
+
+(cd "${repo_root}" && "${compose[@]}" up -d pbs audit)
+ready_deadline=$((SECONDS + 300))
+until curl --fail --silent --max-time 2 http://127.0.0.1:8000/status > /dev/null; do
+  if (( SECONDS >= ready_deadline )); then
+    echo "PBS-Java did not become ready within 300 seconds" >&2
+    diagnose_pbs_failure
+    exit 1
+  fi
+  sleep 1
+done
+
+(cd "${repo_root}" && "${compose[@]}" up -d dsp)
+auction_verified=0
+for attempt in {1..3}; do
+  if PBS_READY_TIMEOUT_SECONDS=30 bash "${script_dir}/java/smoke.sh"; then
+    auction_verified=1
+    break
+  fi
+  if (( attempt < 3 )); then
+    sleep 2
+  fi
+done
+if (( auction_verified == 0 )); then
+  diagnose_pbs_failure
   exit 1
 fi
 
