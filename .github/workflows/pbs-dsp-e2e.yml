@@ -119,12 +119,51 @@ jobs:
           brew install docker docker-compose
           mkdir -p "$HOME/.docker/cli-plugins"
           ln -sfn "$(brew --prefix docker-compose)/bin/docker-compose" "$HOME/.docker/cli-plugins/docker-compose"
+      - name: Cache Lima and Colima release assets
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/lima.tar.gz
+            ${{ runner.temp }}/colima
+          key: macos-15-intel-lima-2.2.1-colima-0.10.3-assets-v1
       - name: Install Lima and Colima
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/lima.tar.gz" https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-x86_64.tar.gz
+          download_asset() {
+            local repo="$1" tag="$2" asset="$3" destination="$4" asset_id
+            [[ -s "$destination" ]] && return 0
+            asset_id="$(curl -fsSL --retry 3 --retry-all-errors --retry-delay 5 --retry-max-time 90 \
+              -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$repo/releases/tags/$tag" |
+              jq -er --arg name "$asset" '.assets[] | select(.name == $name) | .id')" || asset_id=
+            if [[ -n "$asset_id" ]] && \
+              curl -fsSL --retry 3 --retry-all-errors --retry-delay 5 --retry-max-time 90 \
+                -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/octet-stream' \
+                -o "${destination}.download" \
+                "https://api.github.com/repos/$repo/releases/assets/$asset_id"; then
+              if validate_asset "$asset" "${destination}.download"; then
+                mv "${destination}.download" "$destination"
+                return 0
+              fi
+            fi
+            echo "GitHub API download failed for $asset; trying the release URL" >&2
+            curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 --retry-max-time 180 \
+              -o "${destination}.download" \
+              "https://github.com/$repo/releases/download/$tag/$asset"
+            validate_asset "$asset" "${destination}.download"
+            mv "${destination}.download" "$destination"
+          }
+          validate_asset() {
+            case "$1" in
+              *.tar.gz) tar -tzf "$2" >/dev/null 2>&1 ;;
+              *) file -b "$2" | grep -q '^Mach-O' ;;
+            esac
+          }
+          download_asset lima-vm/lima v2.2.1 lima-2.2.1-Darwin-x86_64.tar.gz "$RUNNER_TEMP/lima.tar.gz"
           sudo mkdir -p /usr/local/libexec
           sudo tar -xzf "$RUNNER_TEMP/lima.tar.gz" -C /usr/local
-          curl -fsSL -o "$RUNNER_TEMP/colima" https://github.com/abiosoft/colima/releases/download/v0.10.3/colima-Darwin-x86_64
+          download_asset abiosoft/colima v0.10.3 colima-Darwin-x86_64 "$RUNNER_TEMP/colima"
           sudo install -m 755 "$RUNNER_TEMP/colima" /usr/local/bin/colima
       - name: Cache Lima VM image downloads
         uses: actions/cache@v4
