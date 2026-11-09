@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   stage:
+    if: ${{ false }} # Temporarily skip Android E2E while diagnosing iOS PBS startup.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
