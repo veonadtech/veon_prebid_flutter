@@ -1,4 +1,7 @@
 services:
+  pbs:
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:TieredStopAtLevel=1
   dsp:
     volumes:
       - ./dsp-local/campaign-ios.json:/app/campaign.json:ro

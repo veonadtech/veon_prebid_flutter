@@ -24,11 +24,15 @@ fi
 compose=(docker compose -f e2e/pbs/compose.yaml -f e2e/pbs/compose-dsp.yaml \
   -f e2e/pbs/compose-ios.yaml --profile dsp)
 diagnose_pbs_failure() {
+  local dsp_id pbs_id
   echo "PBS/DSP diagnostics after readiness or smoke failure:" >&2
   echo "Audit /status response:" >&2
   curl --silent --show-error --max-time 5 -i http://127.0.0.1:8000/status >&2 || true
-  echo "DSP response from host:" >&2
-  curl --silent --show-error --max-time 5 -i http://127.0.0.1:9800/prebid/bid >&2 || true
+  dsp_id=$(cd "${repo_root}" && "${compose[@]}" ps -q dsp || true)
+  if [[ -n "$dsp_id" ]]; then
+    echo "DSP response from host:" >&2
+    curl --silent --show-error --max-time 5 -i http://127.0.0.1:9800/prebid/bid >&2 || true
+  fi
   (cd "${repo_root}" && "${compose[@]}" ps -a) >&2 || true
   pbs_id=$(cd "${repo_root}" && "${compose[@]}" ps -q pbs || true)
   if [[ -n "$pbs_id" ]]; then
