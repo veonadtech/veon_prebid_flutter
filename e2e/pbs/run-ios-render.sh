@@ -47,7 +47,7 @@ diagnose_pbs_failure() {
   fi
   docker stats --no-stream --format \
     'Container: {{.Name}} CPU: {{.CPUPerc}} Memory: {{.MemUsage}}' >&2 || true
-  (cd "${repo_root}" && "${compose[@]}" logs --no-color --timestamps pbs) >&2 || true
+  (cd "${repo_root}" && "${compose[@]}" logs --no-color --timestamps pbs dsp) >&2 || true
 }
 
 (cd "${repo_root}" && "${compose[@]}" up -d pbs audit)
@@ -62,6 +62,19 @@ until curl --fail --silent --max-time 2 http://127.0.0.1:8000/status > /dev/null
 done
 
 (cd "${repo_root}" && "${compose[@]}" up -d dsp)
+dsp_ready_deadline=$((SECONDS + 180))
+until curl --fail --silent --max-time 5 \
+  -H 'Content-Type: application/json' \
+  --data-binary "@${script_dir}/dsp-local/request.json" \
+  http://127.0.0.1:9800/prebid/bid > /dev/null; do
+  if (( SECONDS >= dsp_ready_deadline )); then
+    echo "Local DSP did not respond to a bid request within 180 seconds" >&2
+    diagnose_pbs_failure
+    exit 1
+  fi
+  sleep 2
+done
+
 auction_verified=0
 for attempt in {1..3}; do
   if PBS_READY_TIMEOUT_SECONDS=30 bash "${script_dir}/java/smoke.sh"; then
