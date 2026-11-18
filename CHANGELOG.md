@@ -1,5 +1,13 @@
 # CHANGELOG
 
+# 0.7.2
+## Android SDK version upgraded to 0.5.4
+### Fixed
+* Fixed click logic some type of mraid.expand banners
+
+### iOS
+* Remove CocoaPods from the example app and use Swift Package Manager.
+
 # 0.7.1
 ## Android SDK version upgraded to 0.5.3
 ### Fixed
