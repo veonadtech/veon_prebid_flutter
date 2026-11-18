@@ -413,7 +413,7 @@ class PrebidView internal constructor(
             activeBannerConfig = null
             try {
                 val loader = MultiBannerLoaderLegacyGam(
-                    context = applicationContext,
+                    context = appActivity,
                     adSize = AdSize(width, height),
                     configId = configId,
                     gamAdUnitId = gamAdUnitId,

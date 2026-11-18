@@ -1,5 +1,13 @@
 # CHANGELOG
 
+# 0.7.2-yandex
+## Android SDK version upgraded to 0.5.4
+### Fixed
+* Fixed click logic some type of mraid.expand banners
+
+# iOS SDK
+* Pods removed from FLutter adapter
+
 # 0.7.1-yandex
 ## Android SDK version upgraded to 0.5.3
 ### Fixed
