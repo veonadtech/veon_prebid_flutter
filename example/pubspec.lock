@@ -5,10 +5,10 @@ packages:
     dependency: "direct main"
     description:
       name: app_tracking_transparency
-      sha256: "1f71f4d8402552fbf8b191d4edab301f233c1af794878b7bc56c708470ffd74c"
+      sha256: "3a52669c0645ffd7efe9a460047616de3e3f2128338f9ec7cdb681628d36238e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.6+1"
+    version: "2.0.7"
   async:
     dependency: transitive
     description:
@@ -200,7 +200,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.7.0"
+    version: "0.7.2"
   sky_engine:
     dependency: transitive
     description: flutter
