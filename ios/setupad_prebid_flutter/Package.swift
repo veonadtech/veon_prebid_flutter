@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "setupad-prebid-flutter", targets: ["setupad_prebid_flutter"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/veonadtech/prebid-ios-sdk.git", exact: "0.5.2"),
+        .package(url: "https://github.com/veonadtech/prebid-ios-sdk.git", exact: "0.5.3"),
         .package(url: "https://github.com/googleads/swift-package-manager-google-mobile-ads.git", from: "13.6.0"),
     ],
     targets: [

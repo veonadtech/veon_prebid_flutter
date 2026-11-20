@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/veonadtech/prebid-ios-sdk.git",
       "state" : {
-        "revision" : "0f4ddff58a7ffa637bb88b2be1e86adfdb0e1989",
-        "version" : "0.5.2"
+        "revision" : "51783b1e866eb52678ec445b998ca588e4989dc0",
+        "version" : "0.5.3"
       }
     },
     {

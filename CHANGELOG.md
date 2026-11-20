@@ -49,7 +49,7 @@
 * Remove legacy Travis CI setup
 * fit the corrective WebView scale inside both axes and retry on layout
 
-## iOS SDK version upgraded to 0.5.2
+## iOS SDK version upgraded to 0.5.3
 
 # 0.6.2
 ## Changed
