@@ -9,7 +9,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework"),
-        .package(url: "https://github.com/veonadtech/prebid-ios-sdk.git", exact: "0.5.2"),
+        .package(url: "https://github.com/veonadtech/prebid-ios-sdk.git", exact: "0.5.3"),
         .package(url: "https://github.com/googleads/swift-package-manager-google-mobile-ads.git", from: "13.6.0"),
         .package(url: "https://github.com/yandexmobile/yandex-ads-sdk-ios.git", .upToNextMinor(from: "8.4.0")),
     ],
